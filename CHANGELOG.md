@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Aligned the Polar API User-Agent with the package/runtime version.
+
 ## 0.1.1
 
 - Improved README and local OAuth success/terminal UX.

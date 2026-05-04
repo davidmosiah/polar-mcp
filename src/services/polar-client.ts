@@ -1,5 +1,5 @@
 import { URL, URLSearchParams } from "node:url";
-import { DEFAULT_LIMIT, POLAR_API_BASE_URL, POLAR_AUTH_URL, POLAR_TOKEN_URL, MAX_POLAR_LIMIT } from "../constants.js";
+import { DEFAULT_LIMIT, POLAR_API_BASE_URL, POLAR_AUTH_URL, POLAR_TOKEN_URL, MAX_POLAR_LIMIT, SERVER_VERSION } from "../constants.js";
 import type { PolarConfig, PolarTokenSet } from "../types.js";
 import { disabledCacheStatus, PolarCache, type CacheStatus } from "./cache.js";
 import { redactErrorMessage } from "./redaction.js";
@@ -194,7 +194,7 @@ export class PolarClient {
       Accept: "application/json",
       "Content-Type": "application/json",
       "Accept-Language": "en_US",
-      "User-Agent": "polar-mcp-server/0.1.0"
+      "User-Agent": `polar-mcp-server/${SERVER_VERSION}`
     };
   }
 
@@ -205,7 +205,7 @@ export class PolarClient {
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json",
       "Accept-Language": "en_US",
-      "User-Agent": "polar-mcp-server/0.1.0"
+      "User-Agent": `polar-mcp-server/${SERVER_VERSION}`
     };
   }
 
