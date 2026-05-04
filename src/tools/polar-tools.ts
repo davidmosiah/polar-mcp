@@ -160,12 +160,12 @@ export function registerPolarTools(server: McpServer): void {
 
   registerCollectionTool(server, "polar_list_activity", "Polar Daily Activity", "/activity/list", "List Polar daily activity records. Requires activity:read.", "none");
   registerCollectionTool(server, "polar_list_calendar", "Polar Calendar", "/calendar/list", "List Polar calendar entries in a date range. Requires calendar:read.");
-  registerCollectionTool(server, "polar_list_continuous_samples", "Polar Continuous Samples", "/continuous-samples", "List continuous sample records for a date range. Requires continuous_samples:read.");
-  registerCollectionTool(server, "polar_list_nightly_recharge", "Polar Nightly Recharge", "/nightly-recharge-results", "List Nightly Recharge results in a date range. Requires nightly_recharge:read.");
+  registerCollectionTool(server, "polar_list_continuous_samples", "Polar Continuous Samples", "/continuous-samples", "List continuous sample records for a date range. Requires continuous_samples:read. Not medical advice.");
+  registerCollectionTool(server, "polar_list_nightly_recharge", "Polar Nightly Recharge", "/nightly-recharge-results", "List Nightly Recharge results in a date range. Requires nightly_recharge:read. Not medical advice.");
   registerCollectionTool(server, "polar_list_ppi_samples", "Polar PPI Samples", "/ppi-samples", "List pulse-to-pulse interval samples in a date range. Requires ppi_data:read.");
   registerCollectionTool(server, "polar_list_skin_contacts", "Polar Skin Contacts", "/skin-contacts", "List skin contact periods in a date range. Requires skin_contact:read.");
-  registerCollectionTool(server, "polar_list_sleeps", "Polar Sleeps", "/sleeps", "List Polar sleep records in a date range. Requires sleep:read.");
-  registerCollectionTool(server, "polar_list_sleep_wake_vectors", "Polar Sleep Wake Vectors", "/sleep-wake-vectors", "List sleep/wake vector records in a date range. Requires sleep:read.");
+  registerCollectionTool(server, "polar_list_sleeps", "Polar Sleeps", "/sleeps", "List Polar sleep records in a date range. Requires sleep:read. Not medical advice.");
+  registerCollectionTool(server, "polar_list_sleep_wake_vectors", "Polar Sleep Wake Vectors", "/sleep-wake-vectors", "List sleep/wake vector records in a date range. Requires sleep:read. Not medical advice.");
   registerCollectionTool(server, "polar_list_sports", "Polar Sports", "/sports/list", "List sports available in the Polar ecosystem. Requires sports:read.", "none");
   registerCollectionTool(server, "polar_list_sport_profile_catalog", "Polar Sport Profile Catalog", "/sports/profile-list-catalog", "Load Polar sport profile catalog. Requires sports:read.", "none");
   registerCollectionTool(server, "polar_list_sport_profiles", "Polar Sport Profiles", "/sports/profiles", "List the user's Polar sport profiles. Requires sports:read.", "none");

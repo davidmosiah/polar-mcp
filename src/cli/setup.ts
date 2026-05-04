@@ -59,11 +59,14 @@ export async function runSetupCommand(args: string[]): Promise<number> {
 
   if (options.json) console.log(JSON.stringify(setupOutput, null, 2));
   else {
-    console.log("Polar MCP setup saved.");
-    console.log(`Local config: ${configPath}`);
-    console.log(`MCP client config: ${clientConfig.path}`);
-    if (clientConfig.hermes_skill_path) console.log(`Hermes skill: ${clientConfig.hermes_skill_path}`);
-    console.log("Secrets were saved only in the local Polar MCP config file.");
+    console.log("Polar MCP - Setup");
+    console.log("");
+    console.log(`  ok  Local config       ${configPath}`);
+    console.log(`  ok  MCP client config  ${clientConfig.path}`);
+    if (clientConfig.hermes_skill_path) console.log(`  ok  Hermes skill       ${clientConfig.hermes_skill_path}`);
+    console.log("");
+    console.log("Secrets were saved only in the local config file (chmod 600).");
+    console.log(`Next: ${setupOutput.next_step}`);
   }
 
   if (!options.noAuth) {
