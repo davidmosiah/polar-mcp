@@ -40,6 +40,7 @@ export function buildCapabilities() {
       "Call polar_connection_status before calling Polar data tools.",
       "If setup is incomplete, guide the user through setup, auth and doctor.",
       "Use polar_daily_summary or polar_weekly_summary before low-level endpoint tools.",
+      "Use polar_wellness_context when handing recharge/sleep/training context to Exercise Catalog.",
       "Treat health and route data as sensitive; avoid raw payloads unless explicitly requested.",
       "Use Polar as trend context, not medical diagnosis. Escalate symptoms or abnormal vitals to clinicians."
     ],

@@ -20,7 +20,9 @@ import {
   RouteInputSchema,
   SimpleReadInputSchema,
   SummaryOutputSchema,
-  WeeklySummaryInputSchema
+  WeeklySummaryInputSchema,
+  WellnessContextInputSchema,
+  WellnessContextOutputSchema
 } from "../schemas/common.js";
 import { buildAgentManifest, formatAgentManifestMarkdown } from "../services/agent-manifest.js";
 import { buildPrivacyAudit } from "../services/audit.js";
@@ -30,6 +32,7 @@ import { getConfig } from "../services/config.js";
 import { bulletList, formatCollection, makeError, makeResponse } from "../services/format.js";
 import { applyPrivacy, resolvePrivacyMode } from "../services/privacy.js";
 import { buildDailySummary, buildWeeklySummary, formatSummaryMarkdown } from "../services/summary.js";
+import { buildWellnessContext, formatWellnessContextMarkdown } from "../services/context.js";
 import { PolarClient } from "../services/polar-client.js";
 
 function client(): PolarClient {
@@ -282,6 +285,21 @@ export function registerPolarTools(server: McpServer): void {
     try {
       const summary = await buildWeeklySummary(client(), params);
       return makeResponse(summary, params.response_format, formatSummaryMarkdown(summary));
+    } catch (error) {
+      return makeError((error as Error).message);
+    }
+  });
+
+  server.registerTool("polar_wellness_context", {
+    title: "Polar Wellness Context",
+    description: "Normalize Polar Nightly Recharge, sleep and training load into the shared wellness_context shape for recommendation engines.",
+    inputSchema: WellnessContextInputSchema.shape,
+    outputSchema: WellnessContextOutputSchema.shape,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, async (params) => {
+    try {
+      const context = await buildWellnessContext(client(), params);
+      return makeResponse(context, params.response_format, formatWellnessContextMarkdown(context));
     } catch (error) {
       return makeError((error as Error).message);
     }

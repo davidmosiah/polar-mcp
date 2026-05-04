@@ -74,6 +74,15 @@ export const DailySummaryInputSchema = z.object({
   response_format: ResponseFormatSchema
 }).strict();
 
+export const WellnessContextInputSchema = z.object({
+  days: z.number().int().min(1).max(30).default(7).describe("Lookback window for normalized Polar wellness context."),
+  timezone: z.string().min(1).max(80).default("UTC").describe("IANA timezone used only for display, e.g. America/New_York."),
+  soreness: z.array(z.string().min(1).max(80)).default([]),
+  injury_flags: z.array(z.string().min(1).max(120)).default([]),
+  notes: z.string().max(500).optional(),
+  response_format: ResponseFormatSchema
+}).strict();
+
 export const WeeklySummaryInputSchema = z.object({
   days: z.number().int().min(7).max(60).default(7).describe("Recent analysis window in days."),
   compare_days: z.number().int().min(0).max(60).default(7).describe("Prior comparison window in days. Use 0 to disable comparison."),
@@ -251,6 +260,15 @@ export const SummaryOutputSchema = z.object({
   generated_at: z.string()
 }).passthrough();
 
+export const WellnessContextOutputSchema = z.object({
+  source: z.literal("polar"),
+  generated_at: z.string(),
+  recent_training_load: z.enum(["low", "normal", "high", "unknown"]),
+  soreness: z.array(z.string()),
+  injury_flags: z.array(z.string()),
+  notes: z.array(z.string())
+}).passthrough();
+
 export type CollectionInput = z.infer<typeof CollectionInputSchema>;
 export type IdInput = z.infer<typeof IdInputSchema>;
 export type SimpleReadInput = z.infer<typeof SimpleReadInputSchema>;
@@ -259,4 +277,5 @@ export type AgentManifestInput = z.infer<typeof AgentManifestInputSchema>;
 export type AuthUrlInput = z.infer<typeof AuthUrlInputSchema>;
 export type ExchangeCodeInput = z.infer<typeof ExchangeCodeInputSchema>;
 export type DailySummaryInput = z.infer<typeof DailySummaryInputSchema>;
+export type WellnessContextInput = z.infer<typeof WellnessContextInputSchema>;
 export type WeeklySummaryInput = z.infer<typeof WeeklySummaryInputSchema>;

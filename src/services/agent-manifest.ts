@@ -8,6 +8,7 @@ export const HERMES_DIRECT_TOOLS = [
   "mcp_polar_polar_connection_status",
   "mcp_polar_polar_daily_summary",
   "mcp_polar_polar_weekly_summary",
+  "mcp_polar_polar_wellness_context",
   "mcp_polar_polar_list_sleeps",
   "mcp_polar_polar_list_activity",
   "mcp_polar_polar_list_training_sessions"
@@ -41,6 +42,7 @@ const STANDARD_TOOLS = [
   "polar_list_training_target_favorites",
   "polar_daily_summary",
   "polar_weekly_summary",
+  "polar_wellness_context",
   "polar_privacy_audit",
   "polar_cache_status",
   "polar_revoke_access"
@@ -72,7 +74,7 @@ export function buildAgentManifest(client: AgentClientName = "generic") {
       token_storage: "~/.polar-mcp/tokens.json with 0600 permissions",
       secret_storage: "~/.polar-mcp/config.json or POLAR_* environment variables; never print secrets"
     },
-    recommended_first_calls: ["polar_connection_status", "polar_daily_summary", "polar_weekly_summary"],
+    recommended_first_calls: ["polar_connection_status", "polar_wellness_context", "polar_daily_summary", "polar_weekly_summary"],
     standard_tools: STANDARD_TOOLS,
     resources: RESOURCES,
     hermes: {
@@ -142,7 +144,7 @@ ${manifest.agent_rules.map((rule) => `- ${rule}`).join("\n")}
 }
 
 export function hermesConfigSnippet(): string {
-  return `mcp_servers:\n  polar:\n    command: npx\n    args:\n      - -y\n      - ${PINNED_NPM_PACKAGE}`;
+  return `mcp_servers:\n  polar:\n    command: npx\n    args:\n      - -y\n      - ${PINNED_NPM_PACKAGE}\n    timeout: 120\n    connect_timeout: 60\n    sampling:\n      enabled: false`;
 }
 
 export function hermesSkillMarkdown(): string {

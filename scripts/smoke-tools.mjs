@@ -11,7 +11,7 @@ const expectedTools = [
   'polar_list_sport_profiles', 'polar_list_sports', 'polar_list_subscriptions',
   'polar_list_temperature_measurements', 'polar_list_tests', 'polar_list_training_sessions',
   'polar_list_training_target_favorites', 'polar_list_training_targets', 'polar_list_user_devices',
-  'polar_privacy_audit', 'polar_revoke_access', 'polar_weekly_summary'
+  'polar_privacy_audit', 'polar_revoke_access', 'polar_weekly_summary', 'polar_wellness_context'
 ];
 
 const expectedResources = ['polar://account-data', 'polar://agent-manifest', 'polar://capabilities', 'polar://latest/sleep', 'polar://summary/daily', 'polar://summary/weekly'];
