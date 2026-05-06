@@ -103,6 +103,7 @@ This package uses the official Polar AccessLink Dynamic API v4. When this README
 **Start with these:**
 
 - `polar_connection_status` - verify local setup, scopes and readiness before calling Polar
+- `polar_data_inventory` — inventory supported data domains, scopes, privacy modes and recommended first calls without calling Polar APIs.
 - `polar_daily_summary` - sleep, activity, Nightly Recharge and training brief for today
 - `polar_weekly_summary` - scorecard, comparison vs prior week, next-week plan
 

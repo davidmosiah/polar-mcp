@@ -11,12 +11,13 @@ import {
   ConnectionStatusInputSchema,
   ConnectionStatusOutputSchema,
   DailySummaryInputSchema,
+  DataInventoryOutputSchema,
   EndpointDataOutputSchema,
   ExchangeCodeInputSchema,
   ExchangeCodeOutputSchema,
   PrivacyAuditOutputSchema,
-  RevokeAccessOutputSchema,
   ResponseOnlyInputSchema,
+  RevokeAccessOutputSchema,
   RouteInputSchema,
   SimpleReadInputSchema,
   SummaryOutputSchema,
@@ -27,6 +28,7 @@ import {
 import { buildAgentManifest, formatAgentManifestMarkdown } from "../services/agent-manifest.js";
 import { buildPrivacyAudit } from "../services/audit.js";
 import { buildCapabilities } from "../services/capabilities.js";
+import { buildDataInventory, formatInventoryMarkdown } from "../services/inventory.js";
 import { buildConnectionStatus } from "../services/connection-status.js";
 import { getConfig } from "../services/config.js";
 import { bulletList, formatCollection, makeError, makeResponse } from "../services/format.js";
@@ -98,6 +100,21 @@ function registerReadTool(server: McpServer, name: string, title: string, endpoi
 }
 
 export function registerPolarTools(server: McpServer): void {
+  server.registerTool("polar_data_inventory", {
+    title: "Polar Data Inventory",
+    description: "Inventory supported Polar data domains, auth scope requirements, privacy boundary and recommended first calls. Does not call Polar APIs or expose user data.",
+    inputSchema: ResponseOnlyInputSchema.shape,
+    outputSchema: DataInventoryOutputSchema.shape,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false
+    }
+  }, async ({ response_format }) => {
+    const inventory = buildDataInventory();
+    return makeResponse(inventory, response_format, formatInventoryMarkdown(inventory));
+  });
   server.registerTool("polar_agent_manifest", {
     title: "Polar Agent Manifest",
     description: "Machine-readable install, runtime and client guidance for AI agents. Does not call Polar or expose secrets.",
