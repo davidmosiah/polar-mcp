@@ -12,15 +12,15 @@ export const HERMES_DIRECT_TOOLS = [
 const STANDARD_TOOLS = [
   "polar_agent_manifest", "polar_cache_status", "polar_capabilities",
   "polar_connection_status", "polar_daily_summary", "polar_data_inventory",
-  "polar_exchange_code", "polar_get_account_data", "polar_get_auth_url",
+  "polar_demo", "polar_exchange_code", "polar_get_account_data", "polar_get_auth_url",
   "polar_get_route", "polar_list_activity", "polar_list_calendar",
   "polar_list_continuous_samples", "polar_list_nightly_recharge", "polar_list_ppi_samples",
   "polar_list_skin_contacts", "polar_list_sleep_wake_vectors", "polar_list_sleeps",
   "polar_list_sport_profile_catalog", "polar_list_sport_profiles", "polar_list_sports",
   "polar_list_subscriptions", "polar_list_temperature_measurements", "polar_list_tests",
   "polar_list_training_sessions", "polar_list_training_target_favorites", "polar_list_training_targets",
-  "polar_list_user_devices", "polar_privacy_audit", "polar_revoke_access",
-  "polar_weekly_summary", "polar_wellness_context"
+  "polar_list_user_devices", "polar_privacy_audit", "polar_quickstart",
+  "polar_revoke_access", "polar_weekly_summary", "polar_wellness_context"
 ];
 
 const RESOURCES = [
@@ -53,7 +53,7 @@ export function buildAgentManifest(client: AgentClientName = "generic") {
       token_storage: "~/.polar-mcp/tokens.json with 0600 permissions",
       secret_storage: "~/.polar-mcp/config.json or POLAR_* environment variables; never print secrets"
     },
-    recommended_first_calls: ["polar_connection_status", "polar_data_inventory", "polar_wellness_context", "polar_daily_summary", "polar_weekly_summary"],
+    recommended_first_calls: ["polar_quickstart", "polar_demo", "polar_connection_status", "polar_wellness_context", "polar_daily_summary"],
     standard_tools: STANDARD_TOOLS,
     resources: RESOURCES,
     hermes: {

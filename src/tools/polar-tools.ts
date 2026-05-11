@@ -143,6 +143,119 @@ export function registerPolarTools(server: McpServer): void {
     }));
   });
 
+  server.registerTool(
+    "polar_quickstart",
+    {
+      title: "Polar Quickstart",
+      description:
+        "Personalized 3-step setup walkthrough for the human user. Adapts to current state (env vars set? token present? what's next?). Call this first when the user asks 'how do I connect Polar?'",
+      inputSchema: ResponseOnlyInputSchema.shape,
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+    },
+    async ({ response_format }) => {
+      const status = await buildConnectionStatus();
+      const hasEnv = status.missing_env.length === 0;
+      const hasToken = status.ready_for_polar_api;
+      const steps = [
+        {
+          step: 1,
+          title: hasEnv ? "(done) Polar AccessLink credentials configured" : "Sign up at https://admin.polaraccesslink.com",
+          action: hasEnv
+            ? "POLAR_CLIENT_ID, POLAR_CLIENT_SECRET, POLAR_REDIRECT_URI are all set."
+            : `Create a Polar AccessLink app, register a redirect URI (use ${status.redirect_uri ?? "http://127.0.0.1:3000/callback"}), then set: ${status.missing_env.join(", ")}.`,
+          done: hasEnv,
+        },
+        {
+          step: 2,
+          title: hasToken ? "(done) Local token present — ready to read Polar data" : "Run the OAuth dance",
+          action: hasToken
+            ? "Tokens stored under ~/.polar-mcp/tokens.json. The connector will refresh automatically when needed."
+            : "Run `polar-mcp-server auth` (or call polar_get_auth_url + polar_exchange_code from the agent). Open the URL, grant access, paste the code.",
+          done: hasToken,
+        },
+        {
+          step: 3,
+          title: "Verify with the agent",
+          action: "Call polar_connection_status, then polar_daily_summary or polar_wellness_context. Pair with wellness-nourish for recovery-aware meal coaching.",
+          example: hasToken
+            ? "polar_wellness_context() → Nightly Recharge ANS + sleep + training load handoff for nourish/cycle-coach."
+            : "Until step 2 is done, the data tools will surface a clear 'auth required' message.",
+          done: false,
+        },
+      ];
+      const payload = {
+        ok: true,
+        ready: hasEnv && hasToken,
+        steps,
+        next: steps.find((s) => !s.done) ?? steps[steps.length - 1],
+        cross_connector_hints: [
+          "Pair Polar Nightly Recharge with wellness-nourish for recovery-aware meal coaching.",
+          "Pair Polar sleep + training load with wellness-cycle-coach for late-luteal load adjustments.",
+          "Pair Polar Nightly Recharge ANS + wellness-cgm-mcp glucose for metabolic-stress signals.",
+        ],
+      };
+      const markdown = bulletList("Polar Quickstart", {
+        ready: payload.ready,
+        next: payload.next.title,
+      });
+      return makeResponse(payload, response_format, markdown);
+    }
+  );
+
+  server.registerTool(
+    "polar_demo",
+    {
+      title: "Polar Demo",
+      description:
+        "Returns realistic example payloads of polar_daily_summary, polar_wellness_context, and polar_list_nightly_recharge so agents see the contract before calling real Polar APIs.",
+      inputSchema: ResponseOnlyInputSchema.shape,
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+    },
+    async ({ response_format }) => {
+      const today = new Date().toISOString().slice(0, 10);
+      const payload = {
+        ok: true,
+        is_demo: true,
+        sample: {
+          polar_daily_summary: {
+            date: today,
+            nightly_recharge: { ans_charge_status: 1.2, beat_to_beat_avg_score: 78, hrv_avg: 64, breathing_rate_avg: 14.1 },
+            sleep: { sleep_score: 82, total_sleep_min: 451, sleep_efficiency: 0.92, deep_min: 88, rem_min: 102, light_min: 261 },
+            training: { sessions: 1, training_load_pro: 142, cardio_load: 96, perceived_load: "moderate" },
+            activity: { active_calories: 612, steps: 9_854, active_minutes: 78 },
+          },
+          polar_wellness_context: {
+            window: "last_24h",
+            ans_charge_status: 1.2,
+            ans_band: "good",
+            sleep_score: 82,
+            training_load_pro: 142,
+            recommendation: "Good ANS recovery + adequate sleep — green light for moderate intensity. Consider easy zone-2 work tomorrow if training_load_pro keeps climbing.",
+          },
+          polar_list_nightly_recharge: {
+            count: 3,
+            records: [
+              { date: today, ans_charge_status: 1.2, beat_to_beat_avg_score: 78, hrv_avg: 64 },
+              { date: yesterdayISO(), ans_charge_status: 0.4, beat_to_beat_avg_score: 71, hrv_avg: 58 },
+              { date: dayBeforeISO(), ans_charge_status: -0.6, beat_to_beat_avg_score: 62, hrv_avg: 49 },
+            ],
+          },
+        },
+        notes: [
+          "All sample data is synthetic; tagged with is_demo=true.",
+          "Real calls return live data from the Polar AccessLink v4 API after OAuth setup.",
+        ],
+      };
+      const markdown = bulletList("Polar Demo", {
+        is_demo: true,
+        ans_charge_status: 1.2,
+        sleep_score: 82,
+        recommendation: payload.sample.polar_wellness_context.recommendation,
+      });
+      return makeResponse(payload, response_format, markdown);
+    }
+  );
+
   server.registerTool("polar_get_auth_url", {
     title: "Get Polar OAuth URL",
     description: "Generate a Polar OAuth authorization URL. Use this first when no local token exists.",
@@ -321,4 +434,12 @@ export function registerPolarTools(server: McpServer): void {
       return makeError((error as Error).message);
     }
   });
+}
+
+function yesterdayISO(): string {
+  return new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+}
+
+function dayBeforeISO(): string {
+  return new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
 }

@@ -1,6 +1,6 @@
 {
   "name": "polar-mcp-unofficial",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Unofficial local-first Polar AccessLink Dynamic API v4 MCP server for AI health, sleep and training agents.",
   "type": "module",
   "bin": {
@@ -80,8 +80,7 @@
   "homepage": "https://wellness.delx.ai/connectors/polar",
   "mcpName": "io.github.davidmosiah/polarmcp",
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "main": "dist/index.js"
 }
