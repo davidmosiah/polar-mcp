@@ -64,6 +64,13 @@
           "isRequired": false,
           "format": "string",
           "isSecret": false
+        },
+        {
+          "name": "POLAR_NO_CACHE",
+          "description": "Set to true to bypass the in-memory HTTP response cache (60s TTL for GET only). POST/PUT/DELETE and 4xx/5xx responses are never cached regardless.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
         }
       ]
     }
