@@ -1,5 +1,5 @@
 export const SERVER_NAME = "polar-mcp-server";
-export const SERVER_VERSION = "0.3.3";
+export const SERVER_VERSION = "0.3.4";
 export const NPM_PACKAGE_NAME = "polar-mcp-unofficial";
 export const PINNED_NPM_PACKAGE = `${NPM_PACKAGE_NAME}@${SERVER_VERSION}`;
 

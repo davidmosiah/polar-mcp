@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.4 - 2026-05-20
+
+### Added
+
+- **`POLAR_NO_CACHE` env var now advertised in `server.json`** — the bypass already worked in 0.3.3; this release just surfaces it in the agent-facing manifest so callers discover the opt-out.
+
 ## 0.3.3 - 2026-05-20
 
 ### Added
