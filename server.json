@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.davidmosiah/polarmcp",
-  "description": "Privacy-first, unofficial Polar AccessLink Dynamic API v4 MCP server for AI health, sleep and training agents.",
+  "description": "Privacy-first unofficial Polar AccessLink v4 MCP server for AI health, sleep and training agents.",
   "repository": {
     "url": "https://github.com/davidmosiah/polar-mcp",
     "source": "github"
