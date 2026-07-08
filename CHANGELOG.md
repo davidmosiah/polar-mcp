@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.6 - 2026-07-08
+
+### Fixed
+
+- **Tool errors are now written to stderr** so stdio clients (Claude Desktop, Hermes, etc.) persist them to their MCP server log (e.g. `~/Library/Logs/Claude/mcp-server-polar.log`). Previously every handler folded errors into the tool result only, leaving the server log with no trace of what failed — so an upstream HTTP or input-validation error surfaced to the user as a generic "Tool execution failed" with nothing to diagnose. `makeError` now emits `[polar-mcp] tool error: <message/stack>` (secret-redacted) on every failure. Thanks to Oleksii for the precise, reproducible report.
+- **`after` / `before` accept plain dates (`YYYY-MM-DD`)**, not just timezone-qualified ISO 8601 date-times. Ranges like `after=2026-07-01&before=2026-07-07` previously failed input validation before ever reaching the network. Date-only bounds expand to start/end of day in UTC, so a `before` bound keeps the whole final day.
+
 ## 0.3.4 - 2026-05-20
 
 ### Added

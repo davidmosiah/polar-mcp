@@ -10,8 +10,15 @@ export function makeResponse<T>(data: T, format: ResponseFormat, markdown: strin
   };
 }
 
-export function makeError(message: string): ToolResponse<{ error: string }> {
+export function makeError(error: unknown): ToolResponse<{ error: string }> {
+  const message = error instanceof Error ? error.message : String(error);
   const safeMessage = redactErrorMessage(message);
+  // Surface the failure on stderr so stdio clients (Claude Desktop, Hermes, etc.) persist it
+  // to their MCP server log (e.g. ~/Library/Logs/Claude/mcp-server-polar.log). Handlers
+  // otherwise fold every error into the tool result only, leaving that log with no trace of
+  // what failed — which makes upstream HTTP/validation errors impossible to diagnose.
+  const detail = error instanceof Error && error.stack ? error.stack : message;
+  process.stderr.write(`[polar-mcp] tool error: ${redactErrorMessage(detail)}\n`);
   return {
     isError: true,
     content: [{ type: "text", text: `Error: ${safeMessage}` }],

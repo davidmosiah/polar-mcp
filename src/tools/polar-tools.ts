@@ -80,7 +80,7 @@ function registerCollectionTool(server: McpServer, name: string, title: string, 
         };
         return makeResponse(output, params.response_format, formatCollection(title, records.records, output));
       } catch (error) {
-        return makeError((error as Error).message);
+        return makeError(error);
       }
     }
   );
@@ -103,7 +103,7 @@ function registerReadTool(server: McpServer, name: string, title: string, endpoi
         const data = applyPrivacy(endpoint, await new PolarClient(config).get(endpoint), privacyMode);
         return makeResponse({ endpoint, privacy_mode: privacyMode, data }, response_format, bulletList(title, data as Record<string, unknown>));
       } catch (error) {
-        return makeError((error as Error).message);
+        return makeError(error);
       }
     }
   );
@@ -279,7 +279,7 @@ export function registerPolarTools(server: McpServer): void {
       const output = { auth_url: url, redirect_uri: config.redirectUri, scopes: params.scopes?.length ? params.scopes : config.scopes, next_step: "Open auth_url, approve access, then pass the returned code or full redirect URL to polar_exchange_code." };
       return makeResponse(output, params.response_format, bulletList("Polar OAuth URL", output));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -295,7 +295,7 @@ export function registerPolarTools(server: McpServer): void {
       const output = { ...result, note: "Token values were stored locally and intentionally omitted from this response." };
       return makeResponse(output, params.response_format, bulletList("Polar OAuth Exchange", output));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -334,7 +334,7 @@ export function registerPolarTools(server: McpServer): void {
       const data = applyPrivacy(endpoint, await new PolarClient(config).get(endpoint), privacyMode);
       return makeResponse({ endpoint, privacy_mode: privacyMode, data }, response_format, bulletList("Polar Route", data as Record<string, unknown>));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -369,7 +369,7 @@ export function registerPolarTools(server: McpServer): void {
       const status = client().cacheStatus();
       return makeResponse(status, response_format, bulletList("Polar Cache Status", status));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -396,7 +396,7 @@ export function registerPolarTools(server: McpServer): void {
       const output = { ...result, note: "Local Polar tokens were removed. Re-authorize before future API calls; revoke the remote grant in Polar AccessLink/Flow if you also want server-side revocation." };
       return makeResponse(output, response_format, bulletList("Polar Tokens Removed", output));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -411,7 +411,7 @@ export function registerPolarTools(server: McpServer): void {
       const summary = await buildDailySummary(client(), params);
       return makeResponse(summary, params.response_format, formatSummaryMarkdown(summary));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -426,7 +426,7 @@ export function registerPolarTools(server: McpServer): void {
       const summary = await buildWeeklySummary(client(), params);
       return makeResponse(summary, params.response_format, formatSummaryMarkdown(summary));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -441,7 +441,7 @@ export function registerPolarTools(server: McpServer): void {
       const context = await buildWellnessContext(client(), params);
       return makeResponse(context, params.response_format, formatWellnessContextMarkdown(context));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -478,7 +478,7 @@ export function registerPolarTools(server: McpServer): void {
         storage_path: payload.storage_path
       }));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -510,7 +510,7 @@ export function registerPolarTools(server: McpServer): void {
         updated_fields: payload.updated_fields
       }));
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 
@@ -543,7 +543,7 @@ export function registerPolarTools(server: McpServer): void {
       });
       return makeResponse(payload, response_format, markdown);
     } catch (error) {
-      return makeError((error as Error).message);
+      return makeError(error);
     }
   });
 }

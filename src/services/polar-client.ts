@@ -270,6 +270,11 @@ function polarDateRange(params: ListParams, style: NonNullable<ListParams["date_
 }
 
 function toDateTime(value: string, endOfDay: boolean): string {
+  // Date-only input (YYYY-MM-DD): expand to start/end of day so a `before` bound keeps the
+  // whole final day instead of collapsing to its midnight (Date.parse would drop those hours).
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    return `${value.trim()}T${endOfDay ? "23:59:59" : "00:00:00"}Z`;
+  }
   const parsed = Date.parse(value);
   if (Number.isFinite(parsed)) return new Date(parsed).toISOString();
   const date = value.slice(0, 10);

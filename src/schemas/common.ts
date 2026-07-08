@@ -9,9 +9,12 @@ export const PrivacyModeSchema = PrivacyModeValueSchema.optional()
   .describe("Optional per-call privacy override. Defaults to POLAR_PRIVACY_MODE or structured. raw returns upstream Polar JSON. summary minimizes sensitive health and profile details.");
 
 export const DateTimeSchema = z.string()
-  .datetime({ offset: true })
+  .regex(
+    /^\d{4}-\d{2}-\d{2}([Tt ]\d{2}:\d{2}(:\d{2})?(\.\d+)?([Zz]|[+-]\d{2}:?\d{2})?)?$/,
+    "Use a date (YYYY-MM-DD) or ISO 8601 date-time, e.g. 2026-05-01 or 2026-05-01T00:00:00Z"
+  )
   .optional()
-  .describe("ISO 8601 date-time with timezone, e.g. 2026-05-01T00:00:00Z");
+  .describe("Date (YYYY-MM-DD) or ISO 8601 date-time; timezone optional. E.g. 2026-05-01 or 2026-05-01T00:00:00Z");
 
 export const CollectionInputSchema = z.object({
   after: DateTimeSchema.describe("Only return Polar records after this time. Converted to Polar's inclusive from query parameter."),
