@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.7 - 2026-07-15
+
+### Fixed
+
+- **Dynamic API v4 collection ranges are now sent as plain `YYYY-MM-DD` values.** The 0.3.6 input fix accepted plain dates but normalized them to timestamps such as `2026-07-08T00:00:00Z`, which v4 rejects. Legacy date-time input remains accepted but is reduced to its calendar date before the request.
+- **Collection tools now supply a safe 28-day default range when dates are omitted**, including daily activity, so v4 never receives a range request without its required `from` and `to` parameters. Polar's `to` date remains exclusive.
+- **Daily, weekly, and wellness summaries use plain-date ranges and log per-domain failures to stderr.** Summaries still return useful partial data when one scope or endpoint fails, but the underlying error is now visible in MCP client logs.
+
 ## 0.3.6 - 2026-07-08
 
 ### Fixed

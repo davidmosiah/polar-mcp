@@ -3,9 +3,11 @@ import { buildDailySummary, buildWeeklySummary } from '../dist/services/summary.
 import { buildWellnessContext } from '../dist/services/context.js';
 
 const today = new Date().toISOString().slice(0, 10);
+const summaryRequests = [];
 
 const fakeClient = {
-  async get(endpoint) {
+  async get(endpoint, params) {
+    summaryRequests.push({ endpoint, params });
     if (endpoint.includes('/activity/list')) {
       return { activity: [{ date: today, steps: 9000, activeCalories: 520, totalCalories: 2400, activeDuration: 7200000 }] };
     }
@@ -47,5 +49,30 @@ assert.equal(context.source, 'polar');
 assert.equal(context.readiness_score, 82);
 assert.equal(context.sleep_score, 88);
 assert.equal(context.recent_training_load, 'normal');
+assert.ok(summaryRequests.length > 0);
+for (const request of summaryRequests) {
+  assert.match(request.params?.from ?? '', /^\d{4}-\d{2}-\d{2}$/);
+  assert.match(request.params?.to ?? '', /^\d{4}-\d{2}-\d{2}$/);
+}
+assert.ok(summaryRequests.some((request) => request.endpoint === '/activity/list' && request.params?.from));
+
+const originalStderrWrite = process.stderr.write.bind(process.stderr);
+let stderr = '';
+process.stderr.write = ((chunk) => {
+  stderr += String(chunk);
+  return true;
+});
+try {
+  const partial = await buildDailySummary({
+    async get(endpoint) {
+      throw new Error(`fixture failure for ${endpoint}`);
+    }
+  }, { days: 1, timezone: 'UTC' });
+  assert.equal(partial.data_quality.confidence, 'partial');
+  assert.equal(partial.data_quality.missing_or_failed.sleep, true);
+} finally {
+  process.stderr.write = originalStderrWrite;
+}
+assert.match(stderr, /\[polar-mcp\] tool error: Error: fixture failure for \/sleeps/);
 
 console.log(JSON.stringify({ ok: true, daily: daily.kind, weekly: weekly.kind }, null, 2));

@@ -1,4 +1,5 @@
 import type { PolarClient } from "./polar-client.js";
+import { logToolError } from "./format.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -77,21 +78,23 @@ function dateString(daysAgo = 0): string {
 }
 
 function dayRange(date: string): Record<string, string> {
-  return { from: `${date}T00:00:00Z`, to: `${date}T23:59:59Z` };
+  const next = new Date(`${date}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return { from: date, to: next.toISOString().slice(0, 10) };
 }
 
 async function safeGet(client: Pick<PolarClient, "get">, endpoint: string, params?: Record<string, string>): Promise<unknown> {
   try {
     return await client.get(endpoint, params);
   } catch (error) {
-    return { error: (error as Error).message, endpoint };
+    return { error: logToolError(error), endpoint };
   }
 }
 
 async function dailyBundle(client: Pick<PolarClient, "get">, date: string) {
   const range = dayRange(date);
   const [activity, sleep, nightlyRecharge, trainingSessions, continuousSamples] = await Promise.all([
-    safeGet(client, "/activity/list"),
+    safeGet(client, "/activity/list", range),
     safeGet(client, "/sleeps", range),
     safeGet(client, "/nightly-recharge-results", range),
     safeGet(client, "/training-sessions/list", range),

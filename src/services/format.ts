@@ -11,6 +11,15 @@ export function makeResponse<T>(data: T, format: ResponseFormat, markdown: strin
 }
 
 export function makeError(error: unknown): ToolResponse<{ error: string }> {
+  const safeMessage = logToolError(error);
+  return {
+    isError: true,
+    content: [{ type: "text", text: `Error: ${safeMessage}` }],
+    structuredContent: { error: safeMessage }
+  };
+}
+
+export function logToolError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   const safeMessage = redactErrorMessage(message);
   // Surface the failure on stderr so stdio clients (Claude Desktop, Hermes, etc.) persist it
@@ -19,11 +28,7 @@ export function makeError(error: unknown): ToolResponse<{ error: string }> {
   // what failed — which makes upstream HTTP/validation errors impossible to diagnose.
   const detail = error instanceof Error && error.stack ? error.stack : message;
   process.stderr.write(`[polar-mcp] tool error: ${redactErrorMessage(detail)}\n`);
-  return {
-    isError: true,
-    content: [{ type: "text", text: `Error: ${safeMessage}` }],
-    structuredContent: { error: safeMessage }
-  };
+  return safeMessage;
 }
 
 export function bulletList(title: string, fields: Record<string, unknown>): string {

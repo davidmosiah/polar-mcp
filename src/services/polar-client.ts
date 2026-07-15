@@ -264,21 +264,35 @@ function polarDateRange(params: ListParams, style: NonNullable<ListParams["date_
   if (style === "none") return range;
   const fromKey = style === "fromDate_toDate" ? "fromDate" : "from";
   const toKey = style === "fromDate_toDate" ? "toDate" : "to";
-  if (params.after) range[fromKey] = toDateTime(params.after, false);
-  if (params.before) range[toKey] = toDateTime(params.before, true);
+  const defaults = defaultDateRange();
+  const to = params.before ? toPolarDate(params.before) : defaults.to;
+  range[fromKey] = params.after
+    ? toPolarDate(params.after)
+    : params.before
+      ? shiftDate(to, -28)
+      : defaults.from;
+  range[toKey] = to;
   return range;
 }
 
-function toDateTime(value: string, endOfDay: boolean): string {
-  // Date-only input (YYYY-MM-DD): expand to start/end of day so a `before` bound keeps the
-  // whole final day instead of collapsing to its midnight (Date.parse would drop those hours).
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
-    return `${value.trim()}T${endOfDay ? "23:59:59" : "00:00:00"}Z`;
-  }
-  const parsed = Date.parse(value);
-  if (Number.isFinite(parsed)) return new Date(parsed).toISOString();
-  const date = value.slice(0, 10);
-  return `${date}T${endOfDay ? "23:59:59" : "00:00:00"}Z`;
+function toPolarDate(value: string): string {
+  const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})(?:$|[Tt ])/);
+  if (!match) throw new Error(`Invalid Polar date range value: ${value}. Use YYYY-MM-DD or an ISO 8601 date-time.`);
+  return match[1];
+}
+
+function defaultDateRange(): { from: string; to: string } {
+  const tomorrow = new Date();
+  tomorrow.setUTCHours(0, 0, 0, 0);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const to = tomorrow.toISOString().slice(0, 10);
+  return { from: shiftDate(to, -28), to };
+}
+
+function shiftDate(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function extractRecords(payload: unknown): unknown[] {
