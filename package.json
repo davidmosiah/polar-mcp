@@ -1,6 +1,6 @@
 {
   "name": "polar-mcp-unofficial",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Unofficial local-first Polar AccessLink Dynamic API v4 MCP server for AI health, sleep and training agents.",
   "type": "module",
   "bin": {
@@ -30,9 +30,10 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "smoke": "node scripts/smoke-tools.mjs",
-    "test": "npm run typecheck && npm run build && npm run smoke && npm run smoke:http && npm run test:date-range && npm run test:summary && npm run test:privacy-cache && npm run test:http-retry && npm run test:http-cache && npm run test:cli-ux && npm run test:agent-readiness && npm run test:hermes-agent && npm run test:metadata",
+    "test": "npm run typecheck && npm run build && npm run smoke && npm run smoke:http && npm run test:date-range && npm run test:endpoint-contracts && npm run test:summary && npm run test:privacy-cache && npm run test:http-retry && npm run test:http-cache && npm run test:cli-ux && npm run test:agent-readiness && npm run test:hermes-agent && npm run test:metadata",
     "test:summary": "node scripts/summary-fixture-test.mjs",
     "test:date-range": "node scripts/date-range-test.mjs",
+    "test:endpoint-contracts": "node scripts/endpoint-contract-test.mjs",
     "prepublishOnly": "npm test",
     "smoke:http": "node scripts/smoke-http.mjs",
     "test:privacy-cache": "node scripts/privacy-cache-test.mjs",

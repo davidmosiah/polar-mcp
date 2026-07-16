@@ -24,6 +24,11 @@ const fakeClient = {
       return { continuousSamples: [{ date: today, averageHeartRate: 62 }] };
     }
     throw new Error(`unexpected endpoint ${endpoint}`);
+  },
+  async list(endpoint, params) {
+    const payload = await this.get(endpoint, params);
+    const key = Object.keys(payload)[0];
+    return { records: payload[key], pages_fetched: 1 };
   }
 };
 
@@ -51,10 +56,49 @@ assert.equal(context.sleep_score, 88);
 assert.equal(context.recent_training_load, 'normal');
 assert.ok(summaryRequests.length > 0);
 for (const request of summaryRequests) {
-  assert.match(request.params?.from ?? '', /^\d{4}-\d{2}-\d{2}$/);
-  assert.match(request.params?.to ?? '', /^\d{4}-\d{2}-\d{2}$/);
+  assert.match(request.params?.after ?? '', /^\d{4}-\d{2}-\d{2}$/);
+  assert.match(request.params?.before ?? '', /^\d{4}-\d{2}-\d{2}$/);
 }
-assert.ok(summaryRequests.some((request) => request.endpoint === '/activity/list' && request.params?.from));
+assert.ok(summaryRequests.some((request) => request.endpoint === '/activity/list' && request.params?.after));
+
+const v4SummaryClient = {
+  async list(endpoint) {
+    if (endpoint === '/activity/list') return { records: [{ date: today, steps: 7200 }], pages_fetched: 1 };
+    if (endpoint === '/sleeps') {
+      return {
+        records: [{
+          sleepDate: today,
+          sleepResult: {
+            hypnogram: {
+              sleepStart: `${today}T00:00:00Z`,
+              sleepEnd: `${today}T07:30:00Z`
+            }
+          },
+          sleepEvaluation: {
+            asleepDuration: '27000s',
+            analysis: { continuityIndex: 4.2 },
+            phaseDurations: { deep: '5400s', rem: '6300s', light: '15300s' }
+          },
+          sleepScore: { sleepScore: 91 }
+        }],
+        pages_fetched: 2
+      };
+    }
+    if (endpoint === '/nightly-recharge-results') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/training-sessions/list') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/continuous-samples') return { records: [], pages_fetched: 1 };
+    throw new Error(`unexpected endpoint ${endpoint}`);
+  }
+};
+
+const v4Daily = await buildDailySummary(v4SummaryClient, { days: 1, timezone: 'UTC' });
+assert.equal(v4Daily.data_quality.confidence, 'high');
+assert.equal(v4Daily.scorecard.steps, 7200);
+assert.equal(v4Daily.scorecard.sleep_score, 91);
+assert.equal(v4Daily.scorecard.sleep_minutes, 450);
+assert.equal(v4Daily.scorecard.continuity, 4.2);
+assert.equal(v4Daily.scorecard.sleep_start, `${today}T00:00:00Z`);
+assert.equal(v4Daily.scorecard.sleep_end, `${today}T07:30:00Z`);
 
 const originalStderrWrite = process.stderr.write.bind(process.stderr);
 let stderr = '';
@@ -64,7 +108,7 @@ process.stderr.write = ((chunk) => {
 });
 try {
   const partial = await buildDailySummary({
-    async get(endpoint) {
+    async list(endpoint) {
       throw new Error(`fixture failure for ${endpoint}`);
     }
   }, { days: 1, timezone: 'UTC' });

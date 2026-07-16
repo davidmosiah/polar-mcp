@@ -142,7 +142,7 @@ This package uses the official Polar AccessLink Dynamic API v4. When this README
 **Activity & sleep**
 
 - `polar_list_activity`, `polar_list_calendar`
-- `polar_list_sleeps`, `polar_list_sleep_wake_vectors`
+- `polar_list_sleeps`, `polar_list_sleep_wake_vectors` — sleep lists hydrate available dates with the v4 `sleep-result`, `sleep-evaluation`, and `sleep-score` features by default
 - `polar_list_nightly_recharge`
 
 **Heart & physiology** (date range)
@@ -175,8 +175,9 @@ This package uses the official Polar AccessLink Dynamic API v4. When this README
 
 - OAuth tokens are stored in `~/.polar-mcp/tokens.json` with `0600` permissions and are never returned by tools.
 - The server never prints access or refresh tokens.
-- `POLAR_PRIVACY_MODE` defaults to `structured`. Raw Polar JSON is opt-in via `raw` mode or per-call override.
+- `POLAR_PRIVACY_MODE` defaults to `structured`. Structured mode preserves the complete upstream physiological payload while removing secret/GPS fields; normalized aliases are additive and never replace nested v4 objects. Raw Polar JSON is opt-in via `raw` mode or per-call override.
 - GPS route geometry is redacted in `summary` and `structured` modes - only `raw` mode exposes raw coordinates.
+- Date formats and supported `features` are validated per endpoint. Feature queries that Polar limits to one day are hydrated one available date at a time.
 - The MCP client never sees access or refresh tokens.
 - This is **not medical advice**. The server exposes user-authorized data for personal AI workflows, not diagnosis or training prescription.
 

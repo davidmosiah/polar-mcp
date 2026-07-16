@@ -19,7 +19,7 @@ function loadFromTraining(minutes?: number): "low" | "normal" | "high" | "unknow
   return "normal";
 }
 
-export async function buildWellnessContext(client: Pick<PolarClient, "get">, options: ContextOptions) {
+export async function buildWellnessContext(client: Pick<PolarClient, "list">, options: ContextOptions) {
   const summary = await buildDailySummary(client as PolarClient, options);
   const scorecard = record(summary.scorecard);
   const readiness = num(scorecard.ans_charge);

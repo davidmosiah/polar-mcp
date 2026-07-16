@@ -17,8 +17,10 @@ export const DateTimeSchema = z.string()
   .describe("Date (YYYY-MM-DD) or ISO 8601 date-time; timezone optional. E.g. 2026-05-01 or 2026-05-01T00:00:00Z");
 
 export const CollectionInputSchema = z.object({
-  after: DateTimeSchema.describe("Inclusive start date. Sent to Polar as a plain YYYY-MM-DD from query parameter."),
-  before: DateTimeSchema.describe("Exclusive end date. Sent to Polar as a plain YYYY-MM-DD to query parameter."),
+  after: DateTimeSchema.describe("Inclusive start date. Serialized as a Polar date or date-time according to the endpoint contract."),
+  before: DateTimeSchema.describe("Exclusive end date. Serialized as a Polar date or date-time according to the endpoint contract."),
+  features: z.array(z.string().min(1)).optional()
+    .describe("Optional Polar v4 feature flags. Values are validated per endpoint; feature ranges that require one day are hydrated safely."),
   page: z.number().int().min(1).default(1).describe("Polar page number."),
   limit: z.number().int().min(1).max(MAX_POLAR_LIMIT).default(DEFAULT_LIMIT)
     .describe("Local page-size hint used for pagination safety."),

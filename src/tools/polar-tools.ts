@@ -51,9 +51,7 @@ function client(): PolarClient {
   return new PolarClient(getConfig());
 }
 
-type DateParamStyle = "from_to" | "fromDate_toDate" | "none";
-
-function registerCollectionTool(server: McpServer, name: string, title: string, endpoint: string, description: string, dateParamStyle: DateParamStyle = "from_to"): void {
+function registerCollectionTool(server: McpServer, name: string, title: string, endpoint: string, description: string): void {
   server.registerTool(
     name,
     {
@@ -67,7 +65,7 @@ function registerCollectionTool(server: McpServer, name: string, title: string, 
       try {
         const config = getConfig();
         const privacyMode = resolvePrivacyMode(config, params.privacy_mode);
-        const result = await new PolarClient(config).list(endpoint, { ...params, date_param_style: dateParamStyle });
+        const result = await new PolarClient(config).list(endpoint, params);
         const records = applyPrivacy(endpoint, { records: result.records }, privacyMode) as { records: unknown[] };
         const output = {
           endpoint,
@@ -309,16 +307,16 @@ export function registerPolarTools(server: McpServer): void {
   registerCollectionTool(server, "polar_list_skin_contacts", "Polar Skin Contacts", "/skin-contacts", "List skin contact periods in a date range. Requires skin_contact:read.");
   registerCollectionTool(server, "polar_list_sleeps", "Polar Sleeps", "/sleeps", "List Polar sleep records in a date range. Requires sleep:read. Not medical advice.");
   registerCollectionTool(server, "polar_list_sleep_wake_vectors", "Polar Sleep Wake Vectors", "/sleep-wake-vectors", "List sleep/wake vector records in a date range. Requires sleep:read. Not medical advice.");
-  registerCollectionTool(server, "polar_list_sports", "Polar Sports", "/sports/list", "List sports available in the Polar ecosystem. Requires sports:read.", "none");
-  registerCollectionTool(server, "polar_list_sport_profile_catalog", "Polar Sport Profile Catalog", "/sports/profile-list-catalog", "Load Polar sport profile catalog. Requires sports:read.", "none");
-  registerCollectionTool(server, "polar_list_sport_profiles", "Polar Sport Profiles", "/sports/profiles", "List the user's Polar sport profiles. Requires sports:read.", "none");
-  registerCollectionTool(server, "polar_list_subscriptions", "Polar Subscriptions", "/subscriptions", "List user subscriptions and entitlements. Requires user_subscription:read.", "none");
+  registerCollectionTool(server, "polar_list_sports", "Polar Sports", "/sports/list", "List sports available in the Polar ecosystem. Requires sports:read.");
+  registerCollectionTool(server, "polar_list_sport_profile_catalog", "Polar Sport Profile Catalog", "/sports/profile-list-catalog", "Load Polar sport profile catalog. Requires sports:read.");
+  registerCollectionTool(server, "polar_list_sport_profiles", "Polar Sport Profiles", "/sports/profiles", "List the user's Polar sport profiles. Requires sports:read.");
+  registerCollectionTool(server, "polar_list_subscriptions", "Polar Subscriptions", "/subscriptions", "List user subscriptions and entitlements. Requires user_subscription:read.");
   registerCollectionTool(server, "polar_list_temperature_measurements", "Polar Temperature Measurements", "/temperature-measurements", "List temperature measurements in a date range. Requires temperature_measurement:read.");
   registerCollectionTool(server, "polar_list_tests", "Polar Test Results", "/tests/list", "List Polar fitness/orthostatic/running test results in a date range. Requires tests:read.");
   registerCollectionTool(server, "polar_list_training_sessions", "Polar Training Sessions", "/training-sessions/list", "List Polar training sessions in a date range. Requires training_sessions:read.");
-  registerCollectionTool(server, "polar_list_training_targets", "Polar Training Targets", "/training-target/calendar-targets", "List calendar training targets in a date range. Requires training_targets:read.", "fromDate_toDate");
-  registerCollectionTool(server, "polar_list_training_target_favorites", "Polar Training Target Favorites", "/training-target/favorites", "List user training target favorites. Requires training_targets:read.", "none");
-  registerCollectionTool(server, "polar_list_user_devices", "Polar User Devices", "/user-devices", "List devices registered to the Polar user. Requires devices:read.", "none");
+  registerCollectionTool(server, "polar_list_training_targets", "Polar Training Targets", "/training-target/calendar-targets", "List calendar training targets in a date range. Requires training_targets:read.");
+  registerCollectionTool(server, "polar_list_training_target_favorites", "Polar Training Target Favorites", "/training-target/favorites", "List user training target favorites. Requires training_targets:read.");
+  registerCollectionTool(server, "polar_list_user_devices", "Polar User Devices", "/user-devices", "List devices registered to the Polar user. Requires devices:read.");
 
   server.registerTool("polar_get_route", {
     title: "Polar Route",

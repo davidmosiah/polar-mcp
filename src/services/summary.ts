@@ -77,28 +77,29 @@ function dateString(daysAgo = 0): string {
   return new Date(Date.now() - daysAgo * DAY_MS).toISOString().slice(0, 10);
 }
 
-function dayRange(date: string): Record<string, string> {
+function nextDate(date: string): string {
   const next = new Date(`${date}T00:00:00Z`);
   next.setUTCDate(next.getUTCDate() + 1);
-  return { from: date, to: next.toISOString().slice(0, 10) };
+  return next.toISOString().slice(0, 10);
 }
 
-async function safeGet(client: Pick<PolarClient, "get">, endpoint: string, params?: Record<string, string>): Promise<unknown> {
+async function safeList(client: Pick<PolarClient, "list">, endpoint: string, after: string, before: string): Promise<unknown> {
   try {
-    return await client.get(endpoint, params);
+    const result = await client.list(endpoint, { after, before });
+    return { records: result.records };
   } catch (error) {
     return { error: logToolError(error), endpoint };
   }
 }
 
-async function dailyBundle(client: Pick<PolarClient, "get">, date: string) {
-  const range = dayRange(date);
+async function dailyBundle(client: Pick<PolarClient, "list">, date: string) {
+  const before = nextDate(date);
   const [activity, sleep, nightlyRecharge, trainingSessions, continuousSamples] = await Promise.all([
-    safeGet(client, "/activity/list", range),
-    safeGet(client, "/sleeps", range),
-    safeGet(client, "/nightly-recharge-results", range),
-    safeGet(client, "/training-sessions/list", range),
-    safeGet(client, "/continuous-samples", range)
+    safeList(client, "/activity/list", date, before),
+    safeList(client, "/sleeps", date, before),
+    safeList(client, "/nightly-recharge-results", date, before),
+    safeList(client, "/training-sessions/list", date, before),
+    safeList(client, "/continuous-samples", date, before)
   ]);
   return { date, activity, sleep, nightlyRecharge, trainingSessions, continuousSamples };
 }
@@ -106,22 +107,31 @@ async function dailyBundle(client: Pick<PolarClient, "get">, date: string) {
 function dailyStats(bundle: Awaited<ReturnType<typeof dailyBundle>>) {
   const activity = firstData(bundle.activity);
   const sleep = firstData(bundle.sleep);
+  const sleepResult = isObject(sleep.sleepResult) ? sleep.sleepResult : {};
+  const hypnogram = isObject(sleepResult.hypnogram) ? sleepResult.hypnogram : {};
+  const sleepEvaluation = isObject(sleep.sleepEvaluation) ? sleep.sleepEvaluation : {};
+  const sleepAnalysis = isObject(sleepEvaluation.analysis) ? sleepEvaluation.analysis : {};
+  const sleepScore = isObject(sleep.sleepScore) ? sleep.sleepScore : {};
   const recharge = firstData(bundle.nightlyRecharge);
   const training = records(bundle.trainingSessions);
   const continuous = firstData(bundle.continuousSamples);
 
-  const sleepMs = num(sleep, ["sleepDuration", "totalSleepTime", "totalSleep", "sleep_goal", "sleepGoal"]);
+  const sleepMs = num(sleep, ["sleepDuration", "totalSleepTime", "totalSleep", "sleep_goal", "sleepGoal"])
+    ?? polarDurationMs(sleepEvaluation.asleepDuration);
   const activeDurationMs = num(activity, ["activeDuration", "active_duration", "duration"]);
-  const trainingDurationMs = sum(training.map((item) => num(item, ["duration", "exerciseDuration", "trainingLoadDuration"])));
+  const trainingDurationMs = sum(training.map((item) => num(item, ["duration", "durationMillis", "exerciseDuration", "trainingLoadDuration"])));
   const trainingCalories = sum(training.map((item) => num(item, ["calories", "kiloCalories", "energy"])));
 
   return {
     date: bundle.date,
-    sleep_score: num(sleep, ["sleepScore", "sleep_score", "score", "sleepRating"]),
+    sleep_score: (typeof sleep.sleepScore === "number" ? sleep.sleepScore : undefined)
+      ?? num(sleep, ["sleep_score", "score", "sleepRating"])
+      ?? num(sleepScore, ["sleepScore"]),
     sleep_minutes: sleepMs === undefined ? undefined : round(sleepMs / 60000, 0),
-    sleep_start: sleep.sleepStartTime ?? sleep.sleepStart ?? sleep.startTime,
-    sleep_end: sleep.sleepEndTime ?? sleep.sleepEnd ?? sleep.endTime,
-    continuity: num(sleep, ["continuity", "sleepContinuity", "sleepContinuityScore"]),
+    sleep_start: sleep.sleepStartTime ?? sleep.sleepStart ?? sleep.startTime ?? hypnogram.sleepStart,
+    sleep_end: sleep.sleepEndTime ?? sleep.sleepEnd ?? sleep.endTime ?? hypnogram.sleepEnd,
+    continuity: num(sleep, ["continuity", "sleepContinuity", "sleepContinuityScore"])
+      ?? num(sleepAnalysis, ["continuityIndex"]),
     nightly_recharge_status: recharge.nightlyRechargeStatus ?? recharge.nightly_recharge_status ?? recharge.status,
     ans_charge: num(recharge, ["ansCharge", "ans_charge", "ansChargeScore"]),
     sleep_charge: num(recharge, ["sleepCharge", "sleep_charge", "sleepChargeScore"]),
@@ -140,6 +150,14 @@ function dailyStats(bundle: Awaited<ReturnType<typeof dailyBundle>>) {
     has_training_error: isObject(bundle.trainingSessions) && typeof bundle.trainingSessions.error === "string",
     has_continuous_error: isObject(bundle.continuousSamples) && typeof bundle.continuousSamples.error === "string"
   };
+}
+
+function polarDurationMs(value: unknown): number | undefined {
+  if (typeof value !== "string") return undefined;
+  const match = value.trim().match(/^(\d+(?:\.\d+)?)s$/);
+  if (!match) return undefined;
+  const seconds = Number(match[1]);
+  return Number.isFinite(seconds) ? seconds * 1000 : undefined;
 }
 
 function classifyRecovery(stats: ReturnType<typeof dailyStats>): string {
@@ -187,7 +205,7 @@ function aggregateStats(days: ReturnType<typeof dailyStats>[]) {
   };
 }
 
-export async function buildDailySummary(client: Pick<PolarClient, "get">, options: SummaryOptions) {
+export async function buildDailySummary(client: Pick<PolarClient, "list">, options: SummaryOptions) {
   const date = dateString(0);
   const bundle = await dailyBundle(client, date);
   const stats = dailyStats(bundle);
@@ -222,7 +240,7 @@ export async function buildDailySummary(client: Pick<PolarClient, "get">, option
   };
 }
 
-export async function buildWeeklySummary(client: Pick<PolarClient, "get">, options: SummaryOptions) {
+export async function buildWeeklySummary(client: Pick<PolarClient, "list">, options: SummaryOptions) {
   const days = Math.max(options.days, 7);
   const compareDays = options.compare_days ?? 7;
   const currentBundles = await Promise.all(Array.from({ length: days }, (_, index) => dailyBundle(client, dateString(index))));

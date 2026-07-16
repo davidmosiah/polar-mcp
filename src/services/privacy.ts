@@ -57,7 +57,7 @@ function normalizeAccount(record: Record<string, unknown>, mode: PrivacyMode): u
     locale: record.locale
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeDevice(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -71,7 +71,7 @@ function normalizeDevice(record: Record<string, unknown>, mode: PrivacyMode): un
     modified: record.modified
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeActivity(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -84,23 +84,29 @@ function normalizeActivity(record: Record<string, unknown>, mode: PrivacyMode): 
     distance: record.distance
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeSleep(record: Record<string, unknown>, mode: PrivacyMode): unknown {
+  const sleepResult = isObject(record.sleepResult) ? record.sleepResult : {};
+  const hypnogram = isObject(sleepResult.hypnogram) ? sleepResult.hypnogram : {};
+  const evaluation = isObject(record.sleepEvaluation) ? record.sleepEvaluation : {};
+  const analysis = isObject(evaluation.analysis) ? evaluation.analysis : {};
+  const phaseDurations = isObject(evaluation.phaseDurations) ? evaluation.phaseDurations : {};
+  const score = isObject(record.sleepScore) ? record.sleepScore : {};
   const base = pickDefined({
-    date: record.date ?? record.day,
-    sleepStartTime: record.sleepStartTime ?? record.startTime,
-    sleepEndTime: record.sleepEndTime ?? record.endTime,
-    sleepDuration: record.sleepDuration ?? record.totalSleepTime,
-    sleepScore: record.sleepScore ?? record.score,
-    continuity: record.continuity ?? record.sleepContinuity,
-    deepSleep: record.deepSleep,
-    remSleep: record.remSleep,
-    lightSleep: record.lightSleep
+    date: record.date ?? record.day ?? record.sleepDate,
+    sleepStartTime: record.sleepStartTime ?? record.startTime ?? hypnogram.sleepStart,
+    sleepEndTime: record.sleepEndTime ?? record.endTime ?? hypnogram.sleepEnd,
+    sleepDuration: record.sleepDuration ?? record.totalSleepTime ?? evaluation.asleepDuration,
+    sleepScore: typeof record.sleepScore === "number" ? record.sleepScore : record.score ?? score.sleepScore,
+    continuity: record.continuity ?? record.sleepContinuity ?? analysis.continuityIndex,
+    deepSleep: record.deepSleep ?? phaseDurations.deep,
+    remSleep: record.remSleep ?? phaseDurations.rem,
+    lightSleep: record.lightSleep ?? phaseDurations.light
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeNightlyRecharge(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -113,7 +119,7 @@ function normalizeNightlyRecharge(record: Record<string, unknown>, mode: Privacy
     breathingRate: record.breathingRate
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeTrainingSession(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -130,7 +136,7 @@ function normalizeTrainingSession(record: Record<string, unknown>, mode: Privacy
     trainingLoad: record.trainingLoad ?? record.cardioLoad
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeSamples(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -143,7 +149,7 @@ function normalizeSamples(record: Record<string, unknown>, mode: PrivacyMode): u
     sample_count: sampleCount(record)
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeTemperature(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -156,7 +162,7 @@ function normalizeTemperature(record: Record<string, unknown>, mode: PrivacyMode
     bodyTemperature: record.bodyTemperature
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeRoute(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -170,7 +176,7 @@ function normalizeRoute(record: Record<string, unknown>, mode: PrivacyMode): unk
     point_count: sampleCount(record)
   });
   if (mode === "summary") return base;
-  return removeGps(removeSensitive({ ...record, ...base }));
+  return removeGps(removeSensitive({ ...base, ...record }));
 }
 
 function normalizeTest(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -183,7 +189,7 @@ function normalizeTest(record: Record<string, unknown>, mode: PrivacyMode): unkn
     vo2Max: record.vo2Max
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeSport(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -194,7 +200,7 @@ function normalizeSport(record: Record<string, unknown>, mode: PrivacyMode): unk
     type: record.type
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeTrainingTarget(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -207,7 +213,7 @@ function normalizeTrainingTarget(record: Record<string, unknown>, mode: PrivacyM
     targetType: session.targetType ?? record.targetType
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function normalizeSkinContact(record: Record<string, unknown>, mode: PrivacyMode): unknown {
@@ -219,7 +225,7 @@ function normalizeSkinContact(record: Record<string, unknown>, mode: PrivacyMode
     sample_count: sampleCount(record)
   });
   if (mode === "summary") return base;
-  return removeSensitive({ ...record, ...base });
+  return removeSensitive({ ...base, ...record });
 }
 
 function summarizeUnknown(record: Record<string, unknown>): Record<string, unknown> {

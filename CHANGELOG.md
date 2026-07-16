@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.8 - 2026-07-16
+
+### Fixed
+
+- **Collection request contracts are now explicit per Polar v4 endpoint.** Training-session ranges use ISO date-times, while sleep and the other date-based domains keep plain `YYYY-MM-DD` values. Supported feature flags and one-day feature limits are validated from the same contract matrix instead of being inferred globally.
+- **Sleep list calls now return the physiological payload promised by structured mode.** The connector first indexes the requested range, then hydrates only the available sleep dates with `sleep-result`, `sleep-evaluation`, and `sleep-score`, respecting Polar's one-day feature-query rule.
+- **Structured normalization no longer overwrites nested v4 objects with flattened aliases.** Upstream fields such as `sleepScore`, `sleepResult`, and `sleepEvaluation` are preserved in full after secret/GPS redaction; normalized aliases are additive, while only summary mode returns a flattened-only representation.
+- **Daily, weekly, and wellness summaries now use the same endpoint-aware collection path** and understand Polar v4 nested sleep durations, scores, continuity, and start/end times.
+
+Thanks again to Oleksii for testing 0.3.7 against a real Polar account and isolating both failures precisely.
+
 ## 0.3.7 - 2026-07-15
 
 ### Fixed

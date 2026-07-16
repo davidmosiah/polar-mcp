@@ -2,6 +2,7 @@ import { URL, URLSearchParams } from "node:url";
 import { DEFAULT_LIMIT, POLAR_API_BASE_URL, POLAR_AUTH_URL, POLAR_TOKEN_URL, MAX_POLAR_LIMIT, SERVER_VERSION } from "../constants.js";
 import type { PolarConfig, PolarTokenSet } from "../types.js";
 import { disabledCacheStatus, PolarCache, type CacheStatus } from "./cache.js";
+import { getCollectionEndpointContract, type CollectionEndpointContract } from "./endpoint-contracts.js";
 import { fetchWithCache, getCacheStats } from "./http-cache.js";
 import { fetchWithRetry as fetchWithRetryMiddleware } from "./http-retry.js";
 import { redactErrorMessage } from "./redaction.js";
@@ -14,8 +15,11 @@ export interface ListParams {
   limit?: number;
   all_pages?: boolean;
   max_pages?: number;
-  date_param_style?: "from_to" | "fromDate_toDate" | "none";
+  features?: string[];
 }
+
+type QueryValue = string | number | boolean | readonly string[] | undefined;
+type QueryParams = Record<string, QueryValue>;
 
 export class PolarClient {
   private readonly tokenStore: TokenStore;
@@ -50,7 +54,7 @@ export class PolarClient {
     return { ok: true, token_path: this.config.tokenPath, scope: tokens.scope ?? redirectScope, expires_at: tokens.expires_at };
   }
 
-  async get(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<unknown> {
+  async get(path: string, params?: QueryParams): Promise<unknown> {
     return this.request("GET", path, undefined, params);
   }
 
@@ -78,6 +82,18 @@ export class PolarClient {
   }
 
   async list(path: string, params: ListParams = {}): Promise<{ records: unknown[]; next_page?: number; pages_fetched: number }> {
+    const contract = getCollectionEndpointContract(path);
+    const features = params.features === undefined ? [...(contract.defaultFeatures ?? [])] : params.features;
+    validateFeatures(path, features, contract);
+
+    if (features.length && contract.featuresRequireSingleDay) {
+      return this.listWithDailyFeatures(path, params, contract, features);
+    }
+
+    return this.listPages(path, params, contract, features);
+  }
+
+  private async listPages(path: string, params: ListParams, contract: CollectionEndpointContract, features: string[]): Promise<{ records: unknown[]; next_page?: number; pages_fetched: number }> {
     const limit = Math.min(Math.max(params.limit ?? DEFAULT_LIMIT, 1), MAX_POLAR_LIMIT);
     const maxPages = params.all_pages ? Math.max(1, params.max_pages ?? 1) : 1;
     const records: unknown[] = [];
@@ -86,7 +102,8 @@ export class PolarClient {
 
     while (pages < maxPages) {
       const payload = await this.get(path, {
-        ...polarDateRange(params, params.date_param_style ?? "from_to"),
+        ...polarDateRange(params, contract),
+        features,
         next_token: nextToken
       });
       const pageRecords = extractRecords(payload);
@@ -98,6 +115,32 @@ export class PolarClient {
     }
 
     return { records, next_page: nextToken ? (params.page ?? 1) + pages : undefined, pages_fetched: pages };
+  }
+
+  private async listWithDailyFeatures(path: string, params: ListParams, contract: CollectionEndpointContract, features: string[]): Promise<{ records: unknown[]; next_page?: number; pages_fetched: number }> {
+    const index = await this.listPages(path, { ...params, features: [] }, contract, []);
+    const limit = Math.min(Math.max(params.limit ?? DEFAULT_LIMIT, 1), MAX_POLAR_LIMIT);
+    const dates = [...new Set(index.records.map(recordDate).filter((date): date is string => Boolean(date)))];
+    if (!dates.length) return index;
+
+    const records: unknown[] = [];
+    let hydratedRequests = 0;
+    for (const date of dates) {
+      const nextDate = shiftDate(date, 1);
+      const payload = await this.get(path, {
+        ...polarDateRange({ after: date, before: nextDate }, contract),
+        features
+      });
+      hydratedRequests += 1;
+      records.push(...extractRecords(payload));
+      if (records.length >= limit) break;
+    }
+
+    return {
+      records: records.slice(0, limit),
+      next_page: index.next_page,
+      pages_fetched: index.pages_fetched + hydratedRequests
+    };
   }
 
   private extractCode(input: string): string {
@@ -120,7 +163,7 @@ export class PolarClient {
     }
   }
 
-  private async request(method: "GET" | "POST", path: string, body?: Record<string, string | number | boolean | undefined>, params?: Record<string, string | number | boolean | undefined>): Promise<unknown> {
+  private async request(method: "GET" | "POST", path: string, body?: Record<string, string | number | boolean | undefined>, params?: QueryParams): Promise<unknown> {
     const token = await this.getValidToken();
     const url = this.buildUrl(path, params);
     const response = await this.fetchWithRetry(url, {
@@ -142,12 +185,16 @@ export class PolarClient {
     return this.parseAndCache(method, url, response);
   }
 
-  private buildUrl(path: string, params?: Record<string, string | number | boolean | undefined>): string {
+  private buildUrl(path: string, params?: QueryParams): string {
     const cleanPath = path.startsWith("/") ? path : `/${path}`;
     const url = new URL(`${POLAR_API_BASE_URL}${cleanPath}`);
     for (const [key, value] of Object.entries(params ?? {})) {
       if (value === undefined || value === null || value === "") continue;
-      url.searchParams.set(key, String(value));
+      if (Array.isArray(value)) {
+        for (const item of value) url.searchParams.append(key, String(item));
+      } else {
+        url.searchParams.set(key, String(value));
+      }
     }
     return url.toString();
   }
@@ -259,20 +306,29 @@ export class PolarClient {
   }
 }
 
-function polarDateRange(params: ListParams, style: NonNullable<ListParams["date_param_style"]>): Record<string, string> {
+function polarDateRange(params: ListParams, contract: CollectionEndpointContract): Record<string, string> {
   const range: Record<string, string> = {};
-  if (style === "none") return range;
-  const fromKey = style === "fromDate_toDate" ? "fromDate" : "from";
-  const toKey = style === "fromDate_toDate" ? "toDate" : "to";
+  if (contract.dateParamStyle === "none") return range;
+  const fromKey = contract.dateParamStyle === "fromDate_toDate" ? "fromDate" : "from";
+  const toKey = contract.dateParamStyle === "fromDate_toDate" ? "toDate" : "to";
   const defaults = defaultDateRange();
   const to = params.before ? toPolarDate(params.before) : defaults.to;
-  range[fromKey] = params.after
+  const from = params.after
     ? toPolarDate(params.after)
     : params.before
       ? shiftDate(to, -28)
       : defaults.from;
-  range[toKey] = to;
+  range[fromKey] = formatDateValue(params.after ?? from, from, contract.dateValueFormat);
+  range[toKey] = formatDateValue(params.before ?? to, to, contract.dateValueFormat);
   return range;
+}
+
+function formatDateValue(original: string, date: string, format: CollectionEndpointContract["dateValueFormat"]): string {
+  if (format === "date") return date;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(original.trim())) return `${date}T00:00:00Z`;
+  const parsed = Date.parse(original);
+  if (!Number.isFinite(parsed)) throw new Error(`Invalid Polar date-time range value: ${original}`);
+  return new Date(parsed).toISOString().replace(/\.000Z$/, "Z");
 }
 
 function toPolarDate(value: string): string {
@@ -303,6 +359,7 @@ function extractRecords(payload: unknown): unknown[] {
     "data",
     "records",
     "items",
+    "activityDays",
     "activity",
     "activities",
     "calendarEntries",
@@ -310,6 +367,7 @@ function extractRecords(payload: unknown): unknown[] {
     "continuousSamples",
     "samples",
     "nightlyRechargeResults",
+    "nightSleeps",
     "ppiSamples",
     "skinContacts",
     "sleepWakeVectors",
@@ -338,6 +396,25 @@ function extractRecords(payload: unknown): unknown[] {
     .map((value) => extractRecords(value))
     .find((items) => items.length > 0);
   return nestedArrays ?? [record];
+}
+
+function recordDate(value: unknown): string | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const record = value as Record<string, unknown>;
+  for (const key of ["sleepDate", "date", "day", "startTime", "created"]) {
+    const candidate = record[key];
+    if (typeof candidate === "string" && /^\d{4}-\d{2}-\d{2}/.test(candidate)) return candidate.slice(0, 10);
+  }
+  return undefined;
+}
+
+function validateFeatures(path: string, features: string[], contract: CollectionEndpointContract): void {
+  if (!features.length) return;
+  const supported = new Set(contract.supportedFeatures ?? []);
+  const unsupported = features.filter((feature) => !supported.has(feature));
+  if (unsupported.length) {
+    throw new Error(`Unsupported Polar v4 features for ${path}: ${unsupported.join(", ")}`);
+  }
 }
 
 function extractNextToken(payload: unknown): string | undefined {
