@@ -45,7 +45,7 @@ Return:
   server.registerPrompt("polar_training_load_investigation", {
     title: "Polar Training Load Investigation",
     description: "Investigate Polar training sessions and adjacent sleep/recovery context when API access permits it.",
-    argsSchema: { after: z.string().describe("ISO 8601 start date-time"), before: z.string().optional().describe("Optional ISO 8601 end date-time") }
+    argsSchema: { after: z.string().describe("Start date (YYYY-MM-DD) or local ISO 8601 date-time"), before: z.string().optional().describe("Optional end date or local ISO 8601 date-time") }
   }, ({ after, before }) => userPrompt(`Call polar_list_training_sessions with after=${after}${before ? `, before=${before}` : ""}, response_format=json. If recovery context is needed, call polar_list_sleeps and polar_list_nightly_recharge for the same range.
 
 Explain:

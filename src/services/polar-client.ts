@@ -325,10 +325,13 @@ function polarDateRange(params: ListParams, contract: CollectionEndpointContract
 
 function formatDateValue(original: string, date: string, format: CollectionEndpointContract["dateValueFormat"]): string {
   if (format === "date") return date;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(original.trim())) return `${date}T00:00:00Z`;
-  const parsed = Date.parse(original);
-  if (!Number.isFinite(parsed)) throw new Error(`Invalid Polar date-time range value: ${original}`);
-  return new Date(parsed).toISOString().replace(/\.000Z$/, "Z");
+  const value = original.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${date}T00:00:00`;
+  const match = value.match(
+    /^(\d{4}-\d{2}-\d{2})[Tt ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(?:[Zz]|[+-]\d{2}:?\d{2})?$/
+  );
+  if (!match) throw new Error(`Invalid Polar date-time range value: ${original}`);
+  return `${match[1]}T${match[2]}:${match[3]}:${match[4] ?? "00"}`;
 }
 
 function toPolarDate(value: string): string {

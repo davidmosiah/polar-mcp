@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.9 - 2026-07-16
+
+### Fixed
+
+- **Training-session ranges now use Polar's local ISO date-time wire format** (`YYYY-MM-DDTHH:mm:ss`) without a UTC suffix or offset. The v4 training parser rejects both plain dates and RFC 3339 UTC values such as `2026-07-08T00:00:00Z`; date-only inputs and the default 28-day range now serialize to local midnight.
+- **The endpoint boundary test now covers all training-session range paths:** explicit dates, omitted dates, and date-times containing fractions or timezone suffixes. This prevents the connector from reintroducing a globally normalized date format where the upstream API requires endpoint-specific serialization.
+
+Thanks to Oleksii for testing 0.3.8 and isolating the final failing domain with fresh stderr evidence.
+
 ## 0.3.8 - 2026-07-16
 
 ### Fixed

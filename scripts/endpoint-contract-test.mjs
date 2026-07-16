@@ -64,8 +64,31 @@ try {
   });
   const trainingUrl = requestedUrls.at(-1);
   try {
-    assert.equal(trainingUrl.searchParams.get('from'), '2026-07-08T00:00:00Z');
-    assert.equal(trainingUrl.searchParams.get('to'), '2026-07-15T00:00:00Z');
+    assert.equal(trainingUrl.searchParams.get('from'), '2026-07-08T00:00:00');
+    assert.equal(trainingUrl.searchParams.get('to'), '2026-07-15T00:00:00');
+  } catch (error) {
+    failures.push(error);
+  }
+
+  requestedUrls.length = 0;
+  await client.list('/training-sessions/list', {});
+  const defaultTrainingUrl = requestedUrls.at(-1);
+  try {
+    assert.match(defaultTrainingUrl.searchParams.get('from'), /^\d{4}-\d{2}-\d{2}T00:00:00$/);
+    assert.match(defaultTrainingUrl.searchParams.get('to'), /^\d{4}-\d{2}-\d{2}T00:00:00$/);
+  } catch (error) {
+    failures.push(error);
+  }
+
+  requestedUrls.length = 0;
+  await client.list('/training-sessions/list', {
+    after: '2026-07-08T14:15:16.789-03:00',
+    before: '2026-07-08T16:17Z'
+  });
+  const explicitTrainingUrl = requestedUrls.at(-1);
+  try {
+    assert.equal(explicitTrainingUrl.searchParams.get('from'), '2026-07-08T14:15:16');
+    assert.equal(explicitTrainingUrl.searchParams.get('to'), '2026-07-08T16:17:00');
   } catch (error) {
     failures.push(error);
   }

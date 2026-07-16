@@ -10,8 +10,9 @@ export interface CollectionEndpointContract {
 }
 
 // Keep this matrix aligned with https://www.polar.com/polar-api-v4/swagger.yaml.
-// The live v4 training-sessions endpoint requires date-time values even though its generated
-// parameter description currently says "Date"; this distinction is covered by an HTTP-boundary test.
+// The live v4 training-sessions endpoint requires local date-time values (without a UTC suffix)
+// even though its generated parameter description currently says "Date". The exact wire format
+// is covered by an HTTP-boundary test.
 
 const DATE_RANGE: CollectionEndpointContract = {
   dateParamStyle: "from_to",
