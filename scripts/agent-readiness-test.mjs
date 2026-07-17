@@ -24,6 +24,56 @@ try {
   assert.doesNotMatch(markdown, /\*\*records\*\*/i, 'Collection markdown should not duplicate full record arrays in metadata.');
   assert.match(markdown, /Morning Tennis/);
 
+  const trainingMarkdown = formatCollection('Polar Training Sessions', [{
+    identifier: { id: 'session-123' },
+    startTime: '2026-07-10T06:30:00',
+    sport: { id: 'running' },
+    durationMillis: 3_600_000,
+    distanceMeters: 10_000,
+    calories: 620,
+    hrAvg: 148,
+    hrMax: 181,
+    trainingBenefit: 'TEMPO_TRAINING',
+    recoveryTimeMillis: 21_600_000
+  }], {
+    endpoint: '/training-sessions/list',
+    privacy_mode: 'structured',
+    count: 1,
+    pages_fetched: 1
+  });
+
+  assert.match(trainingMarkdown, /## session-123/);
+  assert.match(trainingMarkdown, /\*\*start_time\*\*: 2026-07-10T06:30:00/);
+  assert.match(trainingMarkdown, /\*\*sport\*\*: \{"id":"running"\}/);
+  assert.match(trainingMarkdown, /\*\*duration_ms\*\*: 3600000/);
+  assert.match(trainingMarkdown, /\*\*distance_m\*\*: 10000/);
+  assert.match(trainingMarkdown, /\*\*hr_avg\*\*: 148/);
+  assert.match(trainingMarkdown, /\*\*training_benefit\*\*: TEMPO_TRAINING/);
+  assert.doesNotMatch(trainingMarkdown, /n\/a/);
+
+  const sleepMarkdown = formatCollection('Polar Sleeps', [{
+    sleepDate: '2026-07-09',
+    sleepScore: { sleepScore: 87 },
+    sleepResult: {
+      hypnogram: {
+        sleepStart: '2026-07-08T23:00:00-03:00',
+        sleepEnd: '2026-07-09T07:00:00-03:00'
+      }
+    }
+  }], {
+    endpoint: '/sleeps',
+    privacy_mode: 'structured',
+    count: 1,
+    pages_fetched: 1
+  });
+
+  assert.match(sleepMarkdown, /## 2026-07-09/);
+  assert.match(sleepMarkdown, /\*\*sleep_date\*\*: 2026-07-09/);
+  assert.match(sleepMarkdown, /\*\*sleep_score\*\*: 87/);
+  assert.match(sleepMarkdown, /\*\*sleep_start\*\*: 2026-07-08T23:00:00-03:00/);
+  assert.match(sleepMarkdown, /\*\*sleep_end\*\*: 2026-07-09T07:00:00-03:00/);
+  assert.doesNotMatch(sleepMarkdown, /n\/a/);
+
   const tokenPath = join(dir, 'tokens.json');
   writeFileSync(tokenPath, JSON.stringify({
     access_token: 'access',

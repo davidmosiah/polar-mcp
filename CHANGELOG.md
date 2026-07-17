@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.10 - 2026-07-17
+
+### Fixed
+
+- **Markdown collection previews now understand Polar v4 records instead of only legacy snake-case activity aliases.** Training sessions show their nested identifier, local `startTime`, sport, duration, distance, calories, heart-rate range, training benefit, and recovery time; sleep previews show `sleepDate`, score, and hypnogram start/end when available.
+- **Missing optional preview fields are omitted instead of rendered as misleading `n/a` values.** JSON and structured payloads remain unchanged.
+
+Thanks to Oleksii for confirming all five data domains on 0.3.9 and reporting the final presentation-only mismatch.
+
 ## 0.3.9 - 2026-07-16
 
 ### Fixed
