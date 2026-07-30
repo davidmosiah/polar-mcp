@@ -283,7 +283,7 @@ export function registerPolarTools(server: McpServer): void {
 
   server.registerTool("polar_exchange_code", {
     title: "Exchange Polar OAuth Code",
-    description: "Exchange a Polar OAuth authorization code for local tokens. Tokens are stored locally with 0600 permissions and are never returned.",
+    description: "Exchange a Polar OAuth authorization code for local tokens. Tokens are stored locally with 0600 permissions and are never returned. Requires explicit user action: the user must complete browser OAuth and supply the authorization code (agents must not invent codes).",
     inputSchema: ExchangeCodeInputSchema.shape,
     outputSchema: ExchangeCodeOutputSchema.shape,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
