@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.11 - 2026-07-30
+
+### Fixed
+
+- **`polar_list_calendar` now sends naive local ISO date-times** (`YYYY-MM-DDTHH:mm:ss`) for `from`/`to`, matching the live AccessLink wire format. Plain `YYYY-MM-DD` was rejected with HTTP 400 "could not be parsed as datetime".
+- **`polar_list_training_targets` now uses `from`/`to` plain dates** instead of `fromDate`/`toDate`. The live endpoint requires `from` and rejects the camelCase param names with "Query parameter 'from' is required".
+- **Regression coverage for issue #4 bug 6:** date-range and endpoint-contract tests assert calendar naive datetime serialization and training-target `from`/`to` plain dates (and that activity still always sends `from`/`to`).
+
+Thanks to [@tavferreira](https://github.com/tavferreira) for the live-API diagnosis of the remaining calendar and training-target date contracts (GitHub issue #4). Bugs 1–5 from that report were already addressed in 0.3.7–0.3.9.
+
 ## 0.3.10 - 2026-07-17
 
 ### Fixed

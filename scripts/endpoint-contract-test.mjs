@@ -114,6 +114,48 @@ try {
     failures.push(error);
   }
 
+  // Issue #4 / bug 6: calendar wants naive datetime; training targets want from/to plain dates.
+  requestedUrls.length = 0;
+  await client.list('/calendar/list', {
+    after: '2026-07-08',
+    before: '2026-07-15'
+  });
+  const calendarUrl = requestedUrls.at(-1);
+  try {
+    assert.equal(calendarUrl.searchParams.get('from'), '2026-07-08T00:00:00');
+    assert.equal(calendarUrl.searchParams.get('to'), '2026-07-15T00:00:00');
+  } catch (error) {
+    failures.push(error);
+  }
+
+  requestedUrls.length = 0;
+  await client.list('/calendar/list', {
+    after: '2026-07-08T14:15:16.789-03:00',
+    before: '2026-07-08T16:17Z'
+  });
+  const calendarDateTimeUrl = requestedUrls.at(-1);
+  try {
+    assert.equal(calendarDateTimeUrl.searchParams.get('from'), '2026-07-08T14:15:16');
+    assert.equal(calendarDateTimeUrl.searchParams.get('to'), '2026-07-08T16:17:00');
+  } catch (error) {
+    failures.push(error);
+  }
+
+  requestedUrls.length = 0;
+  await client.list('/training-target/calendar-targets', {
+    after: '2026-07-08',
+    before: '2026-07-15'
+  });
+  const trainingTargetUrl = requestedUrls.at(-1);
+  try {
+    assert.equal(trainingTargetUrl.searchParams.get('from'), '2026-07-08');
+    assert.equal(trainingTargetUrl.searchParams.get('to'), '2026-07-15');
+    assert.equal(trainingTargetUrl.searchParams.has('fromDate'), false);
+    assert.equal(trainingTargetUrl.searchParams.has('toDate'), false);
+  } catch (error) {
+    failures.push(error);
+  }
+
   if (failures.length) throw new AggregateError(failures, 'Polar endpoint contract regressions');
 
   console.log(JSON.stringify({ ok: true, suite: 'endpoint-contracts', requests: requestedUrls.length }, null, 2));

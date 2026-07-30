@@ -63,12 +63,29 @@ try {
 
   await client.list('/training-target/calendar-targets', {
     after: '2026-07-08',
-    before: '2026-07-15',
-    date_param_style: 'fromDate_toDate'
+    before: '2026-07-15'
   });
   const trainingTargetRange = new URL(requestedUrls.at(-1));
-  assert.equal(trainingTargetRange.searchParams.get('fromDate'), '2026-07-08');
-  assert.equal(trainingTargetRange.searchParams.get('toDate'), '2026-07-15');
+  assert.equal(trainingTargetRange.searchParams.get('from'), '2026-07-08');
+  assert.equal(trainingTargetRange.searchParams.get('to'), '2026-07-15');
+  assert.equal(trainingTargetRange.searchParams.has('fromDate'), false);
+  assert.equal(trainingTargetRange.searchParams.has('toDate'), false);
+
+  await client.list('/calendar/list', {
+    after: '2026-07-08',
+    before: '2026-07-15'
+  });
+  const calendarRange = new URL(requestedUrls.at(-1));
+  assert.equal(calendarRange.searchParams.get('from'), '2026-07-08T00:00:00');
+  assert.equal(calendarRange.searchParams.get('to'), '2026-07-15T00:00:00');
+
+  await client.list('/activity/list', {
+    after: '2026-07-01',
+    before: '2026-07-07'
+  });
+  const activityRange = new URL(requestedUrls.at(-1));
+  assert.equal(activityRange.searchParams.get('from'), '2026-07-01');
+  assert.equal(activityRange.searchParams.get('to'), '2026-07-07');
 
   console.log(JSON.stringify({ ok: true, suite: 'date-range', requests: requestedUrls.length }, null, 2));
 } finally {

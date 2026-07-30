@@ -9,10 +9,11 @@ export interface CollectionEndpointContract {
   featuresRequireSingleDay?: boolean;
 }
 
-// Keep this matrix aligned with https://www.polar.com/polar-api-v4/swagger.yaml.
-// The live v4 training-sessions endpoint requires local date-time values (without a UTC suffix)
-// even though its generated parameter description currently says "Date". The exact wire format
-// is covered by an HTTP-boundary test.
+// Keep this matrix aligned with https://www.polar.com/polar-api-v4/swagger.yaml and live curl checks.
+// The live v4 training-sessions and calendar list endpoints require local date-time values
+// (without a UTC suffix) even though generated parameter descriptions may say "Date".
+// Training-target calendar-targets wants plain from/to dates (not fromDate/toDate).
+// Wire formats are covered by scripts/date-range-test.mjs and scripts/endpoint-contract-test.mjs.
 
 const DATE_RANGE: CollectionEndpointContract = {
   dateParamStyle: "from_to",
@@ -31,7 +32,10 @@ const COLLECTION_ENDPOINT_CONTRACTS: Record<string, CollectionEndpointContract> 
     featuresRequireSingleDay: true
   },
   "/calendar/list": {
-    ...DATE_RANGE,
+    // Live AccessLink rejects plain YYYY-MM-DD the same way training-sessions does;
+    // confirmed via curl: date → 400 "could not be parsed as datetime", naive local datetime → 200.
+    dateParamStyle: "from_to",
+    dateValueFormat: "datetime",
     supportedFeatures: ["notes", "feeling", "feedback", "perceived-recovery", "weight", "physical-information"]
   },
   "/continuous-samples": {
@@ -86,7 +90,9 @@ const COLLECTION_ENDPOINT_CONTRACTS: Record<string, CollectionEndpointContract> 
     featuresRequireSingleDay: true
   },
   "/training-target/calendar-targets": {
-    dateParamStyle: "fromDate_toDate",
+    // Live endpoint requires from/to (plain date), not fromDate/toDate — confirmed via curl:
+    // fromDate/toDate → 400 "Query parameter 'from' is required"; from/to datetime → 400 date parse; from/to date → 200.
+    dateParamStyle: "from_to",
     dateValueFormat: "date"
   },
   "/training-target/favorites": NO_RANGE,
