@@ -384,12 +384,24 @@ export function registerPolarTools(server: McpServer): void {
 
   server.registerTool("polar_revoke_access", {
     title: "Revoke Polar OAuth Access",
-    description: "Delete the local Polar token file. Use only when the user explicitly wants to disconnect this MCP; revoke the remote grant from Polar if needed.",
-    inputSchema: ResponseOnlyInputSchema.shape,
+    description: "Delete the local Polar token file. Use only when the user explicitly wants to disconnect this MCP; revoke the remote grant from Polar if needed. Gated by explicit_user_intent: true (requires explicit user intent).",
+    inputSchema: {
+      explicit_user_intent: z
+        .boolean()
+        .optional()
+        .describe("Must be true after the user explicitly asked to disconnect. Prevents agents from revoking autonomously."),
+      response_format: z.enum(["markdown", "json"]).default("markdown")
+    },
     outputSchema: RevokeAccessOutputSchema.shape,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true }
-  }, async ({ response_format }) => {
+  }, async ({ explicit_user_intent, response_format }) => {
     try {
+      if (explicit_user_intent !== true) {
+        return makeError(
+          "USER_ACTION_REQUIRED: explicit_user_intent must be true to revoke access. Ask the user to confirm disconnect first."
+        );
+      }
+
       const result = await client().revokeAccess();
       const output = { ...result, note: "Local Polar tokens were removed. Re-authorize before future API calls; revoke the remote grant in Polar AccessLink/Flow if you also want server-side revocation." };
       return makeResponse(output, response_format, bulletList("Polar Tokens Removed", output));
