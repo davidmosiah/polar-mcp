@@ -6,7 +6,12 @@ export const ResponseFormatSchema = z.enum(["markdown", "json"]).default("markdo
 export const AgentClientSchema = z.enum(AGENT_CLIENTS).default("generic");
 export const PrivacyModeValueSchema = z.enum(["summary", "structured", "raw"]);
 export const PrivacyModeSchema = PrivacyModeValueSchema.optional()
-  .describe("Optional per-call privacy override. Defaults to POLAR_PRIVACY_MODE or structured. raw returns upstream Polar JSON. summary minimizes sensitive health and profile details.");
+  .describe("Optional per-call privacy override. Defaults to POLAR_PRIVACY_MODE or structured. raw returns upstream Polar JSON. summary removes GPS/map details.");
+
+export const ExplicitPrivacyIntentSchema = z
+  .boolean()
+  .optional()
+  .describe("Required true when privacy_mode=raw or include_gps=true (agent escalation of redaction).");
 
 export const DateTimeSchema = z.string()
   .regex(
@@ -28,23 +33,27 @@ export const CollectionInputSchema = z.object({
   max_pages: z.number().int().min(1).max(MAX_PAGES).default(DEFAULT_MAX_PAGES)
     .describe("Maximum pages to fetch when all_pages is true."),
   privacy_mode: PrivacyModeSchema,
+  explicit_user_intent: ExplicitPrivacyIntentSchema,
   response_format: ResponseFormatSchema
 }).strict();
 
 export const IdInputSchema = z.object({
   id: z.union([z.string().min(1), z.number().int().positive()]).describe("Polar resource id."),
   privacy_mode: PrivacyModeSchema,
+  explicit_user_intent: ExplicitPrivacyIntentSchema,
   response_format: ResponseFormatSchema
 }).strict();
 
 export const RouteInputSchema = z.object({
   route_id: z.string().min(1).describe("Polar route id returned by a calendar or training-session record."),
   privacy_mode: PrivacyModeSchema,
+  explicit_user_intent: ExplicitPrivacyIntentSchema,
   response_format: ResponseFormatSchema
 }).strict();
 
 export const SimpleReadInputSchema = z.object({
   privacy_mode: PrivacyModeSchema,
+  explicit_user_intent: ExplicitPrivacyIntentSchema,
   response_format: ResponseFormatSchema
 }).strict();
 
