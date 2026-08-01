@@ -30,6 +30,8 @@ import {
 import { buildAgentManifest, formatAgentManifestMarkdown } from "../services/agent-manifest.js";
 import { buildPrivacyAudit } from "../services/audit.js";
 import { buildCapabilities } from "../services/capabilities.js";
+import { buildCollectionOutput } from "../services/collection.js";
+import { buildDemoPayload } from "../services/demo.js";
 import { buildDataInventory, formatInventoryMarkdown } from "../services/inventory.js";
 import { buildConnectionStatus } from "../services/connection-status.js";
 import { getConfig } from "../services/config.js";
@@ -66,17 +68,8 @@ function registerCollectionTool(server: McpServer, name: string, title: string, 
         const config = getConfig();
         const privacyMode = resolvePrivacyMode(config, params.privacy_mode, { explicit_user_intent: (params as { explicit_user_intent?: boolean }).explicit_user_intent, include_gps: (params as { include_gps?: boolean }).include_gps });
         const result = await new PolarClient(config).list(endpoint, params);
-        const records = applyPrivacy(endpoint, { records: result.records }, privacyMode) as { records: unknown[] };
-        const output = {
-          endpoint,
-          privacy_mode: privacyMode,
-          count: records.records.length,
-          records: records.records,
-          next_page: result.next_page,
-          has_more: Boolean(result.next_page),
-          pages_fetched: result.pages_fetched
-        };
-        return makeResponse(output, params.response_format, formatCollection(title, records.records, output));
+        const output = buildCollectionOutput(endpoint, privacyMode, result);
+        return makeResponse(output, params.response_format, formatCollection(title, output.records, output));
       } catch (error) {
         return makeError(error);
       }
@@ -220,45 +213,13 @@ export function registerPolarTools(server: McpServer): void {
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
     },
     async ({ response_format }) => {
-      const today = new Date().toISOString().slice(0, 10);
-      const payload = {
-        ok: true,
-        is_demo: true,
-        sample: {
-          polar_daily_summary: {
-            date: today,
-            nightly_recharge: { ans_charge_status: 1.2, beat_to_beat_avg_score: 78, hrv_avg: 64, breathing_rate_avg: 14.1 },
-            sleep: { sleep_score: 82, total_sleep_min: 451, sleep_efficiency: 0.92, deep_min: 88, rem_min: 102, light_min: 261 },
-            training: { sessions: 1, training_load_pro: 142, cardio_load: 96, perceived_load: "moderate" },
-            activity: { active_calories: 612, steps: 9_854, active_minutes: 78 },
-          },
-          polar_wellness_context: {
-            window: "last_24h",
-            ans_charge_status: 1.2,
-            ans_band: "good",
-            sleep_score: 82,
-            training_load_pro: 142,
-            recommendation: "Good ANS recovery + adequate sleep — green light for moderate intensity. Consider easy zone-2 work tomorrow if training_load_pro keeps climbing.",
-          },
-          polar_list_nightly_recharge: {
-            count: 3,
-            records: [
-              { date: today, ans_charge_status: 1.2, beat_to_beat_avg_score: 78, hrv_avg: 64 },
-              { date: yesterdayISO(), ans_charge_status: 0.4, beat_to_beat_avg_score: 71, hrv_avg: 58 },
-              { date: dayBeforeISO(), ans_charge_status: -0.6, beat_to_beat_avg_score: 62, hrv_avg: 49 },
-            ],
-          },
-        },
-        notes: [
-          "All sample data is synthetic; tagged with is_demo=true.",
-          "Real calls return live data from the Polar AccessLink v4 API after OAuth setup.",
-        ],
-      };
+      const payload = buildDemoPayload();
       const markdown = bulletList("Polar Demo", {
-        is_demo: true,
-        ans_charge_status: 1.2,
-        sleep_score: 82,
-        recommendation: payload.sample.polar_wellness_context.recommendation,
+        is_demo: payload.is_demo,
+        readiness_score: payload.sample.polar_wellness_context.readiness_score,
+        sleep_score: payload.sample.polar_wellness_context.sleep_score,
+        recent_training_load: payload.sample.polar_wellness_context.recent_training_load,
+        recovery_context: payload.sample.polar_daily_summary.diagnostic.recovery_context,
       });
       return makeResponse(payload, response_format, markdown);
     }
@@ -556,12 +517,4 @@ export function registerPolarTools(server: McpServer): void {
       return makeError(error);
     }
   });
-}
-
-function yesterdayISO(): string {
-  return new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-}
-
-function dayBeforeISO(): string {
-  return new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
 }

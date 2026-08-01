@@ -1,3 +1,40 @@
+## 0.4.0 - 2026-08-01
+
+### Fixed
+
+- `polar_demo` returned examples that no tool in this server ever produced. An agent that
+  read the demo and wrote a parser from it got nothing back. The examples now match the
+  real builders, key for key.
+  - `polar_daily_summary`: the demo showed `date`, `nightly_recharge.*`, `sleep.*`,
+    `training.*` and `activity.*` at the top level — 22 key paths, none of which the
+    builder emits. It omitted all 45 real ones, including the `scorecard` object where
+    every metric actually lives, plus `kind`, `generated_at`, `window`, `data_quality`,
+    `diagnostic` and `safety`.
+  - `polar_wellness_context`: invented `window`, `ans_charge_status`, `ans_band`,
+    `training_load_pro` and `recommendation`; omitted `source`, `generated_at`,
+    `readiness_score`, `recent_training_load`, `soreness`, `injury_flags`, `notes`,
+    `data_quality` and `telegram_summary`. Nightly Recharge ANS charge is
+    `readiness_score` — an integer score, not the `-2..+2` `ans_charge_status` band the
+    demo advertised, so even the "found" value would have been read wrong.
+  - `polar_list_nightly_recharge`: invented `records[].ans_charge_status`,
+    `beat_to_beat_avg_score` and `hrv_avg`; omitted the whole list envelope
+    (`endpoint`, `privacy_mode`, `next_page`, `has_more`, `pages_fetched`) and the real
+    record fields `status`, `ansCharge`, `sleepCharge`, `hrv`, `breathingRate`.
+
+### Added
+
+- `npm run test:demo-contract` (wired into `npm test`): runs the real
+  `buildDailySummary`, `buildWellnessContext` and `buildCollectionOutput` over a synthetic
+  Polar stub and fails the build in both directions — a key the demo invents, or a contract
+  key the demo omits. List envelopes are unioned across a paginated and a final page so
+  `next_page` stays part of the documented contract.
+
+### Changed
+
+- Demo payloads moved to `src/services/demo.ts` and the list-envelope assembly to
+  `src/services/collection.ts`, so the gate exercises the same code the tools run
+  instead of re-describing it. No change to what `polar_list_*` returns.
+
 ## 0.3.14 - 2026-07-30
 
 ### Added / Fixed
