@@ -33,7 +33,7 @@ export function buildCapabilities() {
       { name: "Activity and calendar", examples: ["daily activity", "calendar entries", "training targets"], tools: ["polar_list_activity", "polar_list_calendar", "polar_list_training_targets"] },
       { name: "Sleep and recovery", examples: ["sleeps", "sleep/wake vectors", "Nightly Recharge"], tools: ["polar_list_sleeps", "polar_list_sleep_wake_vectors", "polar_list_nightly_recharge"] },
       { name: "Training", examples: ["training sessions", "routes", "sports", "sport profiles"], tools: ["polar_list_training_sessions", "polar_get_route", "polar_list_sports", "polar_list_sport_profiles"] },
-      { name: "Samples and tests", examples: ["continuous samples", "PPI samples", "temperature measurements", "test results", "skin contacts"], tools: ["polar_list_continuous_samples", "polar_list_ppi_samples", "polar_list_temperature_measurements", "polar_list_tests", "polar_list_skin_contacts"] }
+      { name: "Samples and tests", examples: ["continuous samples", "PPI samples", "temperature measurements", "test results", "skin contacts"], tools: ["polar_heart_series", "polar_list_continuous_samples", "polar_list_ppi_samples", "polar_list_temperature_measurements", "polar_list_tests", "polar_list_skin_contacts"] }
     ],
     recommended_agent_flow: [
       "Call polar_agent_manifest when installing or operating inside a server agent such as Hermes.",

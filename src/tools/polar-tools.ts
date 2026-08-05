@@ -25,7 +25,9 @@ import {
   SummaryOutputSchema,
   WeeklySummaryInputSchema,
   WellnessContextInputSchema,
-  WellnessContextOutputSchema
+  WellnessContextOutputSchema,
+  HeartSeriesInputSchema,
+  HeartSeriesOutputSchema
 } from "../schemas/common.js";
 import { buildAgentManifest, formatAgentManifestMarkdown } from "../services/agent-manifest.js";
 import { buildPrivacyAudit } from "../services/audit.js";
@@ -40,6 +42,7 @@ import { applyPrivacy, resolvePrivacyMode } from "../services/privacy.js";
 import { buildDailySummary, buildWeeklySummary, formatSummaryMarkdown } from "../services/summary.js";
 import { buildWellnessContext, formatWellnessContextMarkdown } from "../services/context.js";
 import { PolarClient } from "../services/polar-client.js";
+import { SERIES_HARD_MAX_POINTS, buildHeartSeries } from "../services/series.js";
 import {
   buildProfileSummary,
   getOnboardingFlow,
@@ -262,7 +265,47 @@ export function registerPolarTools(server: McpServer): void {
 
   registerCollectionTool(server, "polar_list_activity", "Polar Daily Activity", "/activity/list", "List Polar daily activity records. Requires activity:read.");
   registerCollectionTool(server, "polar_list_calendar", "Polar Calendar", "/calendar/list", "List Polar calendar entries in a date range. Requires calendar:read.");
-  registerCollectionTool(server, "polar_list_continuous_samples", "Polar Continuous Samples", "/continuous-samples", "List continuous sample records for a date range. Requires continuous_samples:read. Not medical advice.");
+  registerCollectionTool(server, "polar_list_continuous_samples", "Polar Continuous Samples", "/continuous-samples", "List continuous sample records for a date range. Requires continuous_samples:read. Prefer polar_heart_series for agent-safe bounded HR series. Not medical advice.");
+
+  server.registerTool("polar_heart_series", {
+    title: "Polar Heart Series",
+    description:
+      "Bounded heart-rate series from Polar continuous samples (agent-safe-series/v1). " +
+      `Exact stats on full-resolution samples plus a series capped at ${SERIES_HARD_MAX_POINTS} points. ` +
+      "Prefer polar_daily_summary first. Shared contract with garmin/strava/fitbit series tools. Not medical advice.",
+    inputSchema: HeartSeriesInputSchema.shape,
+    outputSchema: HeartSeriesOutputSchema.shape,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, async (params) => {
+    try {
+      const date = String(params.date ?? "today");
+      const result = await client().list("/continuous-samples", {
+        after: date,
+        before: date,
+        limit: 200,
+        all_pages: true,
+        max_pages: 10
+      } as never);
+      const series = buildHeartSeries({ records: result.records }, {
+        activityId: date,
+        resolutionSeconds: params.resolution_seconds,
+        maxPoints: params.max_points,
+        referenceMaxHr: params.reference_max_hr,
+        nominalDurationSeconds: 24 * 60 * 60,
+        startTime: `${date}T00:00:00`
+      });
+      return makeResponse(series, params.response_format, bulletList("Polar Heart Series", {
+        date: series.activity_id,
+        avg: series.stats.avg,
+        points: `${series.returned_points}/${series.source_points}`,
+        coverage_ratio: series.data_quality.coverage_ratio,
+        coverage_anchor: series.data_quality.coverage_anchor,
+        downsampled: series.downsampled
+      }));
+    } catch (error) {
+      return makeError((error as Error).message);
+    }
+  });
   registerCollectionTool(server, "polar_list_nightly_recharge", "Polar Nightly Recharge", "/nightly-recharge-results", "List Nightly Recharge results in a date range. Requires nightly_recharge:read. Not medical advice.");
   registerCollectionTool(server, "polar_list_ppi_samples", "Polar PPI Samples", "/ppi-samples", "List pulse-to-pulse interval samples in a date range. Requires ppi_data:read.");
   registerCollectionTool(server, "polar_list_skin_contacts", "Polar Skin Contacts", "/skin-contacts", "List skin contact periods in a date range. Requires skin_contact:read.");

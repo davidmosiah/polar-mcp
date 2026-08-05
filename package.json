@@ -1,6 +1,6 @@
 {
   "name": "polar-mcp-unofficial",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Unofficial local-first Polar AccessLink Dynamic API v4 MCP server for AI health, sleep and training agents.",
   "type": "module",
   "bin": {
@@ -30,7 +30,7 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "smoke": "node scripts/smoke-tools.mjs",
-    "test": "npm run typecheck && npm run build && npm run smoke && npm run smoke:http && npm run test:date-range && npm run test:endpoint-contracts && npm run test:summary && npm run test:privacy-cache && npm run test:http-retry && npm run test:http-cache && npm run test:cli-ux && npm run test:agent-readiness && npm run test:hermes-agent && npm run test:demo-contract && npm run test:metadata",
+    "test": "npm run typecheck && npm run build && npm run smoke && npm run smoke:http && npm run test:date-range && npm run test:endpoint-contracts && npm run test:summary && npm run test:privacy-cache && npm run test:http-retry && npm run test:http-cache && npm run test:cli-ux && npm run test:agent-readiness && npm run test:hermes-agent && npm run test:demo-contract && npm run test:readme-contract && npm run test:activity-series && npm run test:metadata",
     "test:summary": "node scripts/summary-fixture-test.mjs",
     "test:date-range": "node scripts/date-range-test.mjs",
     "test:endpoint-contracts": "node scripts/endpoint-contract-test.mjs",
@@ -42,8 +42,10 @@
     "test:cli-ux": "node scripts/cli-ux-test.mjs",
     "test:agent-readiness": "node scripts/agent-readiness-test.mjs",
     "test:hermes-agent": "node scripts/hermes-agent-manifest-test.mjs",
+    "test:activity-series": "node scripts/activity-series-test.mjs",
     "test:metadata": "node scripts/metadata-check.mjs",
-    "test:demo-contract": "node scripts/demo-contract-test.mjs"
+    "test:demo-contract": "node scripts/demo-contract-test.mjs",
+    "test:readme-contract": "node scripts/readme-contract-test.mjs"
   },
   "keywords": [
     "mcp",

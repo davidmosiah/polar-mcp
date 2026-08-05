@@ -125,10 +125,13 @@ This package uses the official Polar AccessLink Dynamic API v4. When this README
 
 **Start with these:**
 
+- `polar_quickstart` - personalized 3-step setup walkthrough that adapts to what's already configured
 - `polar_connection_status` - verify local setup, scopes and readiness before calling Polar
 - `polar_data_inventory` — inventory supported data domains, scopes, privacy modes and recommended first calls without calling Polar APIs.
+- `polar_demo` - synthetic example payloads so agents see the contract before calling the real API
 - `polar_daily_summary` - sleep, activity, Nightly Recharge and training brief for today
 - `polar_weekly_summary` - scorecard, comparison vs prior week, next-week plan
+- `polar_wellness_context` - Nightly Recharge, sleep and training load in the shared `wellness_context` shape
 
 **Auth & diagnostics**
 
@@ -139,6 +142,10 @@ This package uses the official Polar AccessLink Dynamic API v4. When this README
 
 - `polar_get_account_data`, `polar_list_user_devices`, `polar_list_subscriptions`
 
+**Shared wellness profile** (local, never Polar data)
+
+- `polar_onboarding`, `polar_profile_get`, `polar_profile_update` — the Delx Wellness profile shared with the other connectors; stores only what the user typed, never tokens or biomarkers
+
 **Activity & sleep**
 
 - `polar_list_activity`, `polar_list_calendar`
@@ -147,6 +154,7 @@ This package uses the official Polar AccessLink Dynamic API v4. When this README
 
 **Heart & physiology** (date range)
 
+- `polar_heart_series` — agent-safe-series/v1 bounded HR from continuous samples (prefer this for agents)
 - `polar_list_continuous_samples`, `polar_list_ppi_samples`
 - `polar_list_temperature_measurements`, `polar_list_skin_contacts`
 
@@ -168,8 +176,9 @@ This package uses the official Polar AccessLink Dynamic API v4. When this README
 
 ## Resources
 
-- `polar://capabilities`, `polar://agent-manifest`
+- `polar://capabilities`, `polar://agent-manifest`, `polar://inventory`
 - `polar://summary/daily`, `polar://summary/weekly`
+- `polar://account-data`, `polar://latest/sleep`
 
 ## Privacy & security
 

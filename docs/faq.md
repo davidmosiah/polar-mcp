@@ -15,3 +15,7 @@ Only when `privacy_mode=raw` is explicitly requested. `summary` and `structured`
 ## Is it medical advice?
 
 No. It provides wellness/training context only.
+
+## Dense continuous samples
+
+Prefer **`polar_heart_series`** (agent-safe-series/v1) over dumping full continuous-sample lists into agent context.

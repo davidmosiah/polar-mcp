@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { DEFAULT_LIMIT, DEFAULT_MAX_PAGES, MAX_PAGES, MAX_POLAR_LIMIT } from "../constants.js";
 import { AGENT_CLIENTS } from "../services/agent-manifest.js";
+import {
+  SERIES_DEFAULT_MAX_POINTS,
+  SERIES_DEFAULT_RESOLUTION_SECONDS,
+  SERIES_HARD_MAX_POINTS,
+  SERIES_METRICS
+} from "../services/series.js";
 
 export const ResponseFormatSchema = z.enum(["markdown", "json"]).default("markdown");
 export const AgentClientSchema = z.enum(AGENT_CLIENTS).default("generic");
@@ -318,6 +324,47 @@ export const WellnessContextOutputSchema = z.object({
   injury_flags: z.array(z.string()),
   notes: z.array(z.string())
 }).passthrough();
+
+
+export const HeartSeriesInputSchema = z.object({
+  date: z.string().default("today").describe("Civil date yyyy-MM-dd or today for continuous samples lookback window."),
+  resolution_seconds: z.number().int().min(1).max(3600).default(SERIES_DEFAULT_RESOLUTION_SECONDS),
+  max_points: z.number().int().min(1).max(SERIES_HARD_MAX_POINTS).default(SERIES_DEFAULT_MAX_POINTS),
+  reference_max_hr: z.number().int().min(100).max(240).optional(),
+  response_format: ResponseFormatSchema
+}).strict();
+
+export const HeartSeriesOutputSchema = z.object({
+  contract_version: z.literal("agent-safe-series/v1"),
+  activity_id: z.union([z.string(), z.number()]),
+  metric: z.enum(SERIES_METRICS),
+  unit: z.string(),
+  start_time: z.string().optional(),
+  t_unit: z.literal("seconds_from_start"),
+  resolution_seconds: z.number(),
+  requested_resolution_seconds: z.number(),
+  points: z.array(z.object({ t: z.number(), value: z.number(), min: z.number(), max: z.number(), samples: z.number().int().positive() }).strict()),
+  stats: z.object({ avg: z.number(), min: z.number(), max: z.number(), p25: z.number(), p50: z.number(), p75: z.number(), percentile_method: z.literal("linear_interpolation") }).strict(),
+  time_in_zone: z.object({
+    zone_model: z.literal("percent_of_reference_max_hr"),
+    reference_max_hr: z.number(),
+    reference_source: z.enum(["caller_provided", "activity_recorded_max", "observed_max"]),
+    zones: z.array(z.object({ zone: z.number().int(), min_bpm: z.number(), max_bpm: z.number().nullable(), seconds: z.number(), percent: z.number() }).strict())
+  }).strict().optional(),
+  downsampled: z.boolean(),
+  source_points: z.number().int().nonnegative(),
+  returned_points: z.number().int().nonnegative(),
+  method: z.enum(["time_bucket_mean", "none"]),
+  data_quality: z.object({
+    expected_samples: z.number().int().nonnegative(),
+    actual_samples: z.number().int().nonnegative(),
+    coverage_ratio: z.number().min(0).max(1),
+    longest_gap_seconds: z.number().nonnegative(),
+    sample_interval_seconds: z.number().positive(),
+    coverage_anchor: z.enum(["nominal_duration", "sample_span"])
+  }).strict(),
+  notes: z.array(z.string())
+}).strict();
 
 export type CollectionInput = z.infer<typeof CollectionInputSchema>;
 export type IdInput = z.infer<typeof IdInputSchema>;

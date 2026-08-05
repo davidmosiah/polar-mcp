@@ -1,3 +1,37 @@
+## 0.5.0 - 2026-08-05
+
+### Added
+
+- `polar_heart_series` — agent-safe-series/v1 bounded HR from continuous samples
+  (parity with garmin/strava/fitbit; design thread garmin-mcp#19).
+
+
+## 0.4.1 - 2026-08-01
+
+### Fixed
+
+- The README undersold the server by six tools and three resources. Anyone reading the
+  repo — the first surface a human sees — could not discover `polar_quickstart`,
+  `polar_demo`, `polar_wellness_context`, `polar_onboarding`, `polar_profile_get` or
+  `polar_profile_update`, nor the `polar://inventory`, `polar://account-data` and
+  `polar://latest/sleep` resources. All shipped and working; none documented. They are
+  now listed.
+
+### Added
+
+- `npm run test:readme-contract` — a gate that boots the real server over stdio and
+  compares its tool, prompt and resource lists against the ones parsed out of README.md
+  at run time. It fails in both directions: a name the README publishes that the server
+  does not register, and a name the server registers that the README omits. The expected
+  names live in neither the test nor a snapshot, so the gate cannot drift with the thing
+  it checks. Wired into `npm test`.
+
+### Notes
+
+- The README's single ```json block is an MCP client config snippet, not tool output, so
+  it carries no payload contract. Payload shapes stay guarded by
+  `npm run test:demo-contract`, which runs the real builders.
+
 ## 0.4.0 - 2026-08-01
 
 ### Fixed

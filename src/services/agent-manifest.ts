@@ -5,7 +5,7 @@ export type AgentClientName = typeof AGENT_CLIENTS[number];
 
 export const HERMES_DIRECT_TOOLS = [
   "mcp_polar_polar_agent_manifest", "mcp_polar_polar_connection_status", "mcp_polar_polar_daily_summary",
-  "mcp_polar_polar_data_inventory", "mcp_polar_polar_list_activity", "mcp_polar_polar_list_sleeps",
+  "mcp_polar_polar_data_inventory", "mcp_polar_polar_heart_series", "mcp_polar_polar_list_activity", "mcp_polar_polar_list_sleeps",
   "mcp_polar_polar_list_training_sessions", "mcp_polar_polar_weekly_summary", "mcp_polar_polar_wellness_context"
 ];
 
@@ -14,7 +14,7 @@ const STANDARD_TOOLS = [
   "polar_connection_status", "polar_daily_summary", "polar_data_inventory",
   "polar_demo", "polar_exchange_code", "polar_get_account_data", "polar_get_auth_url",
   "polar_get_route", "polar_list_activity", "polar_list_calendar",
-  "polar_list_continuous_samples", "polar_list_nightly_recharge", "polar_list_ppi_samples",
+  "polar_heart_series", "polar_list_continuous_samples", "polar_list_nightly_recharge", "polar_list_ppi_samples",
   "polar_list_skin_contacts", "polar_list_sleep_wake_vectors", "polar_list_sleeps",
   "polar_list_sport_profile_catalog", "polar_list_sport_profiles", "polar_list_sports",
   "polar_list_subscriptions", "polar_list_temperature_measurements", "polar_list_tests",
