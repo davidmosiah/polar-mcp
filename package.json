@@ -64,6 +64,7 @@
     "better-sqlite3": "^12.10.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "ip-address": "^10.4.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
