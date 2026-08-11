@@ -1,6 +1,6 @@
 {
   "name": "polar-mcp-unofficial",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Unofficial local-first Polar AccessLink Dynamic API v4 MCP server for AI health, sleep and training agents.",
   "type": "module",
   "bin": {
@@ -64,7 +64,7 @@
     "better-sqlite3": "^12.10.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "ip-address": "^10.4.0",
+    "ip-address": "10.4.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -93,6 +93,8 @@
   },
   "main": "dist/index.js",
   "overrides": {
-    "@hono/node-server": "2.0.12"
+    "@hono/node-server": "2.0.12",
+    "fast-uri": "3.1.5",
+    "ip-address": "10.4.0"
   }
 }
