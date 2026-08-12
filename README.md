@@ -31,6 +31,19 @@
 
 ---
 
+## HTTP (v2 stateless)
+
+Default is **stdio**. Optional Streamable HTTP — no session id, JSON responses, loopback only:
+
+```bash
+npx -y polar-mcp-unofficial --http
+# GET  http://127.0.0.1:3000/health
+# POST http://127.0.0.1:3000/mcp   (sessionless)
+```
+
+Env: `POLAR_MCP_HOST`, `POLAR_MCP_PORT`, `POLAR_MCP_TRANSPORT=http`.
+
+
 <!-- /delx-wellness header v2 -->
 
 **Local-first MCP server that connects AI agents to your Polar training, sleep, Nightly Recharge and continuous-sample data.**
