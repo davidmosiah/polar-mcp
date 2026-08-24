@@ -140,38 +140,80 @@ export function resolveEffectiveResolution(samples: RawSample[], requested: numb
   return resolution;
 }
 
+function recordList(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return payload;
+  if (payload && typeof payload === "object") {
+    const o = payload as Record<string, unknown>;
+    if (Array.isArray(o.records)) return o.records;
+    if (Array.isArray(o.data)) return o.data;
+  }
+  return [];
+}
+
+function dayOffsetSeconds(date: unknown, originDate: string | undefined): number {
+  if (typeof date !== "string" || !originDate) return 0;
+  const match = date.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (!match) return 0;
+  const a = Date.parse(`${originDate}T00:00:00Z`);
+  const b = Date.parse(`${match[1]}T00:00:00Z`);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+  return (b - a) / 1000;
+}
+
+type SampleRow = { value: number; offsetMillis?: number; ts?: string | number; dayOffset: number };
+
+function flattenSampleRows(records: unknown[]): SampleRow[] {
+  const rows: SampleRow[] = [];
+  const originDate = records
+    .map((record) => (record && typeof record === "object" ? (record as Record<string, unknown>).date : undefined))
+    .find((date): date is string => typeof date === "string" && /^\d{4}-\d{2}-\d{2}/.test(date));
+  for (const record of records) {
+    if (!record || typeof record !== "object") continue;
+    const r = record as Record<string, unknown>;
+    const dayOffset = dayOffsetSeconds(r.date, originDate);
+    const nested = Array.isArray(r.samples) ? r.samples : [r];
+    for (const item of nested) {
+      if (!item || typeof item !== "object") continue;
+      const s = item as Record<string, unknown>;
+      const value = Number(s.heartRate ?? s.hr ?? s.averageHeartRate ?? s.value);
+      if (!Number.isFinite(value) || value <= 0) continue;
+      const offsetMillis = typeof s.offsetMillis === "number" && Number.isFinite(s.offsetMillis) ? s.offsetMillis : undefined;
+      const ts = s.sampleTime ?? s.time ?? s.timestamp ?? s.startTime ?? s.dateTime;
+      rows.push({
+        value,
+        offsetMillis,
+        ts: typeof ts === "string" || typeof ts === "number" ? ts : undefined,
+        dayOffset
+      });
+    }
+  }
+  return rows;
+}
+
 /** Extract HR samples from Polar continuous-samples list payload. */
 export function extractSamples(payload: unknown): { samples: RawSample[]; notes: string[] } {
   const notes: string[] = [];
-  let records: unknown[] = [];
-  if (Array.isArray(payload)) records = payload;
-  else if (payload && typeof payload === "object") {
-    const o = payload as Record<string, unknown>;
-    if (Array.isArray(o.records)) records = o.records;
-    else if (Array.isArray(o.data)) records = o.data;
-  }
+  const records = recordList(payload);
+  const rows = flattenSampleRows(records);
   const samples: RawSample[] = [];
   let originMs: number | undefined;
-  for (const row of records) {
-    if (!row || typeof row !== "object") continue;
-    const r = row as Record<string, unknown>;
-    const value = Number(r.heartRate ?? r.hr ?? r.averageHeartRate ?? r.value);
-    if (!Number.isFinite(value) || value <= 0) continue;
-    const ts = r.sampleTime ?? r.time ?? r.timestamp ?? r.startTime ?? r.dateTime;
+  for (const row of rows) {
     let t: number;
-    if (typeof ts === "string") {
-      const ms = Date.parse(ts);
+    if (row.offsetMillis !== undefined) {
+      t = row.dayOffset + row.offsetMillis / 1000;
+    } else if (typeof row.ts === "string") {
+      const ms = Date.parse(row.ts);
       if (!Number.isFinite(ms)) continue;
       if (originMs === undefined) originMs = ms;
       t = (ms - originMs) / 1000;
-    } else if (typeof ts === "number" && Number.isFinite(ts)) {
-      const ms = ts > 1e12 ? ts : ts * 1000;
+    } else if (typeof row.ts === "number" && Number.isFinite(row.ts)) {
+      const ms = row.ts > 1e12 ? row.ts : row.ts * 1000;
       if (originMs === undefined) originMs = ms;
       t = (ms - originMs) / 1000;
     } else {
       t = samples.length;
     }
-    samples.push({ t, value });
+    samples.push({ t, value: row.value });
   }
   samples.sort((a, b) => a.t - b.t);
   if (!records.length) notes.push("Empty continuous-samples payload.");

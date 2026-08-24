@@ -65,6 +65,31 @@ assert.equal(summarySleep.deepSleep, '5400s');
 assert.equal(summarySleep.remSleep, '6300s');
 assert.equal(summarySleep.lightSleep, '15300s');
 
+const v4Recharge = {
+  sleepResultDate: '2026-08-23',
+  ansStatus: -3.9621,
+  recoveryIndicator: 4,
+  meanNightlyRecoveryRmssd: 98,
+  meanNightlyRecoveryRri: 1202,
+  exerciseTip: 'Today is a good day for training!'
+};
+const structuredNr = applyPrivacy('/nightly-recharge-results', v4Recharge, 'structured');
+assert.equal(structuredNr.ansStatus, -3.9621);
+assert.equal(structuredNr.recoveryIndicator, 4);
+assert.equal(structuredNr.meanNightlyRecoveryRmssd, 98);
+assert.equal(structuredNr.meanNightlyRecoveryRri, 1202);
+assert.equal(structuredNr.exerciseTip, 'Today is a good day for training!');
+assert.equal(structuredNr.ansCharge, undefined);
+const summaryNr = applyPrivacy('/nightly-recharge-results', v4Recharge, 'summary');
+assert.equal(summaryNr.date, '2026-08-23');
+assert.equal(summaryNr.ansStatus, -3.9621);
+assert.equal(summaryNr.recoveryIndicator, 4);
+assert.equal(summaryNr.meanNightlyRecoveryRmssd, 98);
+assert.equal(summaryNr.meanNightlyRecoveryRri, 1202);
+assert.equal(summaryNr.exerciseTip, 'Today is a good day for training!');
+const rawNr = applyPrivacy('/nightly-recharge-results', v4Recharge, 'raw');
+assert.equal(rawNr.ansStatus, -3.9621);
+
 const streams = normalizeStreams({ heartrate: { data: [120, 121] }, latlng: { data: [[1, 2]] } }, 'structured', false);
 assert.equal(streams.latlng, undefined);
 assert.deepEqual(streams.heartrate.data, [120, 121]);

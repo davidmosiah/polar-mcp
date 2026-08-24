@@ -354,10 +354,41 @@ function shiftDate(value: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-function extractRecords(payload: unknown): unknown[] {
-  if (Array.isArray(payload)) return payload;
+function isEmptyObject(value: unknown): boolean {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.keys(value as object).length === 0);
+}
+
+function looksLikeResourceRecord(record: Record<string, unknown>): boolean {
+  return [
+    "id",
+    "identifier",
+    "trainingSessionId",
+    "date",
+    "day",
+    "startTime",
+    "sleepDate",
+    "sleepResultDate",
+    "created",
+    "deviceRef",
+    "samples",
+    "ansStatus",
+    "recoveryIndicator",
+    "sport",
+    "duration",
+    "steps"
+  ].some((key) => record[key] !== undefined);
+}
+
+function withoutEmptyObjects(items: unknown[]): unknown[] {
+  return items.filter((item) => !isEmptyObject(item));
+}
+
+/** Unwrap Polar list payloads. Empty envelopes (`{}`, `{ data: {} }`) become `[]`, not `[{}]`. */
+export function extractRecords(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return withoutEmptyObjects(payload);
   if (!payload || typeof payload !== "object") return [];
   const record = payload as Record<string, unknown>;
+  if (isEmptyObject(record)) return [];
   for (const key of [
     "data",
     "records",
@@ -389,7 +420,7 @@ function extractRecords(payload: unknown): unknown[] {
     "devices",
     "userDevices"
   ]) {
-    if (Array.isArray(record[key])) return record[key] as unknown[];
+    if (Array.isArray(record[key])) return withoutEmptyObjects(record[key] as unknown[]);
     if (record[key] && typeof record[key] === "object") {
       const nested = extractRecords(record[key]);
       if (nested.length) return nested;
@@ -398,7 +429,8 @@ function extractRecords(payload: unknown): unknown[] {
   const nestedArrays = Object.values(record)
     .map((value) => extractRecords(value))
     .find((items) => items.length > 0);
-  return nestedArrays ?? [record];
+  if (nestedArrays) return nestedArrays;
+  return looksLikeResourceRecord(record) ? [record] : [];
 }
 
 function recordDate(value: unknown): string | undefined {

@@ -15,8 +15,12 @@ function isObject(value: unknown): value is UnknownRecord {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
+function isEmptyObject(value: UnknownRecord): boolean {
+  return Object.keys(value).length === 0;
+}
+
 function records(value: unknown): UnknownRecord[] {
-  if (Array.isArray(value)) return value.filter(isObject);
+  if (Array.isArray(value)) return value.filter(isObject).filter((item) => !isEmptyObject(item));
   if (!isObject(value)) return [];
   for (const key of [
     "data",
@@ -29,12 +33,58 @@ function records(value: unknown): UnknownRecord[] {
     "continuousSamples"
   ]) {
     const candidate = value[key];
-    if (Array.isArray(candidate)) return candidate.filter(isObject);
+    if (Array.isArray(candidate)) return candidate.filter(isObject).filter((item) => !isEmptyObject(item));
     const nested = records(candidate);
     if (nested.length) return nested;
   }
   if (typeof value.error === "string") return [];
+  if (isEmptyObject(value)) return [];
   return [value];
+}
+
+function isTrainingSession(item: UnknownRecord): boolean {
+  return [
+    "id",
+    "identifier",
+    "trainingSessionId",
+    "startTime",
+    "start_time",
+    "sport",
+    "sportName",
+    "duration",
+    "durationMillis",
+    "exerciseDuration",
+    "calories",
+    "kiloCalories"
+  ].some((key) => item[key] !== undefined);
+}
+
+function isNightlyRecharge(item: UnknownRecord): boolean {
+  return [
+    "ansStatus",
+    "recoveryIndicator",
+    "meanNightlyRecoveryRmssd",
+    "meanNightlyRecoveryRri",
+    "exerciseTip",
+    "nightlyRechargeStatus",
+    "ansCharge",
+    "sleepCharge",
+    "sleepResultDate",
+    "hrv"
+  ].some((key) => item[key] !== undefined);
+}
+
+function isActivityRecord(item: UnknownRecord): boolean {
+  return [
+    "date",
+    "day",
+    "steps",
+    "stepCount",
+    "activeCalories",
+    "totalCalories",
+    "activeDuration",
+    "activitiesPerDevice"
+  ].some((key) => item[key] !== undefined);
 }
 
 function firstData(value: unknown): UnknownRecord {
@@ -105,15 +155,17 @@ async function dailyBundle(client: Pick<PolarClient, "list">, date: string) {
 }
 
 function dailyStats(bundle: Awaited<ReturnType<typeof dailyBundle>>) {
-  const activity = firstData(bundle.activity);
+  const activityRecords = records(bundle.activity).filter(isActivityRecord);
+  const activity = activityRecords[0] ?? {};
   const sleep = firstData(bundle.sleep);
   const sleepResult = isObject(sleep.sleepResult) ? sleep.sleepResult : {};
   const hypnogram = isObject(sleepResult.hypnogram) ? sleepResult.hypnogram : {};
   const sleepEvaluation = isObject(sleep.sleepEvaluation) ? sleep.sleepEvaluation : {};
   const sleepAnalysis = isObject(sleepEvaluation.analysis) ? sleepEvaluation.analysis : {};
   const sleepScore = isObject(sleep.sleepScore) ? sleep.sleepScore : {};
-  const recharge = firstData(bundle.nightlyRecharge);
-  const training = records(bundle.trainingSessions);
+  const rechargeRecords = records(bundle.nightlyRecharge).filter(isNightlyRecharge);
+  const recharge = rechargeRecords[0] ?? {};
+  const training = records(bundle.trainingSessions).filter(isTrainingSession);
   const continuous = firstData(bundle.continuousSamples);
 
   const sleepMs = num(sleep, ["sleepDuration", "totalSleepTime", "totalSleep", "sleep_goal", "sleepGoal"])
@@ -121,6 +173,8 @@ function dailyStats(bundle: Awaited<ReturnType<typeof dailyBundle>>) {
   const activeDurationMs = num(activity, ["activeDuration", "active_duration", "duration"]);
   const trainingDurationMs = sum(training.map((item) => num(item, ["duration", "durationMillis", "exerciseDuration", "trainingLoadDuration"])));
   const trainingCalories = sum(training.map((item) => num(item, ["calories", "kiloCalories", "energy"])));
+  const recoveryIndicator = recharge.recoveryIndicator ?? recharge.recovery_indicator;
+  const exerciseTip = typeof recharge.exerciseTip === "string" ? recharge.exerciseTip : undefined;
 
   return {
     date: bundle.date,
@@ -132,9 +186,13 @@ function dailyStats(bundle: Awaited<ReturnType<typeof dailyBundle>>) {
     sleep_end: sleep.sleepEndTime ?? sleep.sleepEnd ?? sleep.endTime ?? hypnogram.sleepEnd,
     continuity: num(sleep, ["continuity", "sleepContinuity", "sleepContinuityScore"])
       ?? num(sleepAnalysis, ["continuityIndex"]),
-    nightly_recharge_status: recharge.nightlyRechargeStatus ?? recharge.nightly_recharge_status ?? recharge.status,
+    nightly_recharge_status: recharge.nightlyRechargeStatus ?? recharge.nightly_recharge_status ?? recharge.status ?? recoveryIndicator,
     ans_charge: num(recharge, ["ansCharge", "ans_charge", "ansChargeScore"]),
     sleep_charge: num(recharge, ["sleepCharge", "sleep_charge", "sleepChargeScore"]),
+    ...(num(recharge, ["ansStatus"]) !== undefined ? { ans_status: num(recharge, ["ansStatus"]) } : {}),
+    ...(recoveryIndicator !== undefined ? { recovery_indicator: recoveryIndicator } : {}),
+    ...(num(recharge, ["meanNightlyRecoveryRri"]) !== undefined ? { nightly_recovery_rri: num(recharge, ["meanNightlyRecoveryRri"]) } : {}),
+    ...(exerciseTip ? { exercise_tip: exerciseTip } : {}),
     steps: num(activity, ["steps", "stepCount"]),
     active_calories: num(activity, ["activeCalories", "active_calories"]),
     total_calories: num(activity, ["totalCalories", "total_calories", "calories"]),
@@ -143,7 +201,7 @@ function dailyStats(bundle: Awaited<ReturnType<typeof dailyBundle>>) {
     training_minutes: trainingDurationMs ? round(trainingDurationMs / 60000, 0) : undefined,
     training_calories: trainingCalories || undefined,
     average_heart_rate: num(continuous, ["averageHeartRate", "heartRateAvg", "avgHr"]),
-    hrv_ms: num(recharge, ["hrv", "heartRateVariability", "rmssd"]),
+    hrv_ms: num(recharge, ["hrv", "heartRateVariability", "rmssd", "meanNightlyRecoveryRmssd"]),
     has_activity_error: isObject(bundle.activity) && typeof bundle.activity.error === "string",
     has_sleep_error: isObject(bundle.sleep) && typeof bundle.sleep.error === "string",
     has_recharge_error: isObject(bundle.nightlyRecharge) && typeof bundle.nightlyRecharge.error === "string",
@@ -158,6 +216,16 @@ function polarDurationMs(value: unknown): number | undefined {
   if (!match) return undefined;
   const seconds = Number(match[1]);
   return Number.isFinite(seconds) ? seconds * 1000 : undefined;
+}
+
+function hasRechargeDay(day: ReturnType<typeof dailyStats>): boolean {
+  return day.nightly_recharge_status !== undefined
+    || day.ans_charge !== undefined
+    || day.sleep_charge !== undefined
+    || day.ans_status !== undefined
+    || day.recovery_indicator !== undefined
+    || day.hrv_ms !== undefined
+    || day.nightly_recovery_rri !== undefined;
 }
 
 function classifyRecovery(stats: ReturnType<typeof dailyStats>): string {
@@ -200,7 +268,7 @@ function aggregateStats(days: ReturnType<typeof dailyStats>[]) {
     avg_sleep_charge: round(avg(days.map((day) => day.sleep_charge)), 1),
     avg_hrv_ms: round(avg(days.map((day) => day.hrv_ms)), 1),
     days_with_sleep: days.filter((day) => day.sleep_minutes !== undefined || day.sleep_score !== undefined).length,
-    days_with_recharge: days.filter((day) => day.nightly_recharge_status !== undefined || day.ans_charge !== undefined || day.sleep_charge !== undefined).length,
+    days_with_recharge: days.filter(hasRechargeDay).length,
     days_with_training: days.filter((day) => day.training_sessions > 0).length
   };
 }

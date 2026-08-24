@@ -132,11 +132,16 @@ function normalizeSleep(record: Record<string, unknown>, mode: PrivacyMode): unk
 
 function normalizeNightlyRecharge(record: Record<string, unknown>, mode: PrivacyMode): unknown {
   const base = pickDefined({
-    date: record.date ?? record.day,
+    date: record.date ?? record.day ?? record.sleepResultDate,
     status: record.nightlyRechargeStatus ?? record.status,
+    ansStatus: record.ansStatus,
+    recoveryIndicator: record.recoveryIndicator,
     ansCharge: record.ansCharge ?? record.ans_charge,
     sleepCharge: record.sleepCharge ?? record.sleep_charge,
-    hrv: record.hrv ?? record.heartRateVariability,
+    hrv: record.hrv ?? record.heartRateVariability ?? record.meanNightlyRecoveryRmssd,
+    meanNightlyRecoveryRmssd: record.meanNightlyRecoveryRmssd,
+    meanNightlyRecoveryRri: record.meanNightlyRecoveryRri,
+    exerciseTip: record.exerciseTip,
     breathingRate: record.breathingRate
   });
   if (mode === "summary") return base;

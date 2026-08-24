@@ -56,6 +56,20 @@ function client(): PolarClient {
   return new PolarClient(getConfig());
 }
 
+function resolveSeriesDate(value: string): string {
+  const raw = value.trim() || "today";
+  if (raw === "today") return new Date().toISOString().slice(0, 10);
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (!match) throw new Error(`Invalid polar_heart_series date: ${value}`);
+  return match[1];
+}
+
+function nextCivilDate(date: string): string {
+  const next = new Date(`${date}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
+}
+
 function registerCollectionTool(server: McpServer, name: string, title: string, endpoint: string, description: string): void {
   server.registerTool(
     name,
@@ -278,15 +292,22 @@ export function registerPolarTools(server: McpServer): void {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, async (params) => {
     try {
-      const date = String(params.date ?? "today");
+      const date = resolveSeriesDate(String(params.date ?? "today"));
+      const before = nextCivilDate(date);
       const result = await client().list("/continuous-samples", {
         after: date,
-        before: date,
+        before,
+        features: ["heart-rate-samples"],
         limit: 200,
         all_pages: true,
         max_pages: 10
-      } as never);
-      const series = buildHeartSeries({ records: result.records }, {
+      });
+      const records = (result.records ?? []).filter((row) => {
+        if (!row || typeof row !== "object") return false;
+        const recDate = (row as { date?: unknown }).date;
+        return recDate === undefined || recDate === date;
+      });
+      const series = buildHeartSeries({ records }, {
         activityId: date,
         resolutionSeconds: params.resolution_seconds,
         maxPoints: params.max_points,
