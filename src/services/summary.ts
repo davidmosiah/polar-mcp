@@ -1,3 +1,4 @@
+import { polarActivityDate, stepsForActivityDay } from "./activity.js";
 import type { PolarClient } from "./polar-client.js";
 import { logToolError } from "./format.js";
 
@@ -155,7 +156,9 @@ async function dailyBundle(client: Pick<PolarClient, "list">, date: string) {
 }
 
 function dailyStats(bundle: Awaited<ReturnType<typeof dailyBundle>>) {
-  const activityRecords = records(bundle.activity).filter(isActivityRecord);
+  const activityRecords = records(bundle.activity)
+    .filter(isActivityRecord)
+    .filter((item) => polarActivityDate(item) === bundle.date);
   const activity = activityRecords[0] ?? {};
   const sleep = firstData(bundle.sleep);
   const sleepResult = isObject(sleep.sleepResult) ? sleep.sleepResult : {};
@@ -193,7 +196,7 @@ function dailyStats(bundle: Awaited<ReturnType<typeof dailyBundle>>) {
     ...(recoveryIndicator !== undefined ? { recovery_indicator: recoveryIndicator } : {}),
     ...(num(recharge, ["meanNightlyRecoveryRri"]) !== undefined ? { nightly_recovery_rri: num(recharge, ["meanNightlyRecoveryRri"]) } : {}),
     ...(exerciseTip ? { exercise_tip: exerciseTip } : {}),
-    steps: num(activity, ["steps", "stepCount"]),
+    steps: stepsForActivityDay(activityRecords) ?? num(activity, ["steps", "stepCount"]),
     active_calories: num(activity, ["activeCalories", "active_calories"]),
     total_calories: num(activity, ["totalCalories", "total_calories", "calories"]),
     active_minutes: activeDurationMs === undefined ? undefined : round(activeDurationMs / 60000, 0),
@@ -254,12 +257,14 @@ function buildActions(stats: ReturnType<typeof dailyStats>, weekly?: ReturnType<
 }
 
 function aggregateStats(days: ReturnType<typeof dailyStats>[]) {
+  const activityDays = days.filter((day) => day.steps !== undefined);
   return {
     days: days.length,
     avg_sleep_score: round(avg(days.map((day) => day.sleep_score)), 1),
     avg_sleep_hours: round(avg(days.map((day) => day.sleep_minutes).map((minutes) => minutes === undefined ? undefined : minutes / 60)), 2),
-    avg_steps: round(avg(days.map((day) => day.steps)), 0),
-    total_steps: round(sum(days.map((day) => day.steps)), 0),
+    avg_steps: activityDays.length ? round(avg(activityDays.map((day) => day.steps)), 0) : undefined,
+    total_steps: activityDays.length ? round(sum(activityDays.map((day) => day.steps)), 0) : undefined,
+    days_with_activity: activityDays.length,
     avg_active_calories: round(avg(days.map((day) => day.active_calories)), 0),
     avg_training_minutes: round(avg(days.map((day) => day.training_minutes)), 0),
     total_training_sessions: round(sum(days.map((day) => day.training_sessions)), 0),

@@ -1,4 +1,5 @@
 import type { PrivacyMode, PolarConfig } from "../types.js";
+import { sumPolarStepSamples } from "./activity.js";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -98,7 +99,7 @@ function normalizeDevice(record: Record<string, unknown>, mode: PrivacyMode): un
 function normalizeActivity(record: Record<string, unknown>, mode: PrivacyMode): unknown {
   const base = pickDefined({
     date: record.date ?? record.day,
-    steps: record.steps ?? record.stepCount,
+    steps: record.steps ?? record.stepCount ?? sumPolarStepSamples(record),
     activeCalories: record.activeCalories ?? record.active_calories,
     totalCalories: record.totalCalories ?? record.total_calories,
     activeDuration: record.activeDuration ?? record.active_duration,
