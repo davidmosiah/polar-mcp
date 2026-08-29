@@ -1,3 +1,7 @@
+## 0.5.3 - 2026-08-29
+
+Skill layer ships in-package (`skill/SKILL.md`). Agents can use MCP tools **or** `call <tool> --json` on the same binary; mutation gates stay identical.
+
 ## 0.5.0 - 2026-08-05
 
 ### Added
