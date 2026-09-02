@@ -1,4 +1,5 @@
 import type { PrivacyMode, PolarConfig } from "../types.js";
+import { sumPolarStepSamples } from "./activity.js";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -98,7 +99,7 @@ function normalizeDevice(record: Record<string, unknown>, mode: PrivacyMode): un
 function normalizeActivity(record: Record<string, unknown>, mode: PrivacyMode): unknown {
   const base = pickDefined({
     date: record.date ?? record.day,
-    steps: record.steps ?? record.stepCount,
+    steps: record.steps ?? record.stepCount ?? sumPolarStepSamples(record),
     activeCalories: record.activeCalories ?? record.active_calories,
     totalCalories: record.totalCalories ?? record.total_calories,
     activeDuration: record.activeDuration ?? record.active_duration,
@@ -132,11 +133,16 @@ function normalizeSleep(record: Record<string, unknown>, mode: PrivacyMode): unk
 
 function normalizeNightlyRecharge(record: Record<string, unknown>, mode: PrivacyMode): unknown {
   const base = pickDefined({
-    date: record.date ?? record.day,
+    date: record.date ?? record.day ?? record.sleepResultDate,
     status: record.nightlyRechargeStatus ?? record.status,
+    ansStatus: record.ansStatus,
+    recoveryIndicator: record.recoveryIndicator,
     ansCharge: record.ansCharge ?? record.ans_charge,
     sleepCharge: record.sleepCharge ?? record.sleep_charge,
-    hrv: record.hrv ?? record.heartRateVariability,
+    hrv: record.hrv ?? record.heartRateVariability ?? record.meanNightlyRecoveryRmssd,
+    meanNightlyRecoveryRmssd: record.meanNightlyRecoveryRmssd,
+    meanNightlyRecoveryRri: record.meanNightlyRecoveryRri,
+    exerciseTip: record.exerciseTip,
     breathingRate: record.breathingRate
   });
   if (mode === "summary") return base;

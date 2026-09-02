@@ -2,6 +2,7 @@ import { URL, URLSearchParams } from "node:url";
 import { DEFAULT_LIMIT, POLAR_API_BASE_URL, POLAR_AUTH_URL, POLAR_TOKEN_URL, MAX_POLAR_LIMIT, SERVER_VERSION } from "../constants.js";
 import type { PolarConfig, PolarTokenSet } from "../types.js";
 import { disabledCacheStatus, PolarCache, type CacheStatus } from "./cache.js";
+import { filterActivityExclusiveRange, normalizeActivityRecords } from "./activity.js";
 import { getCollectionEndpointContract, type CollectionEndpointContract } from "./endpoint-contracts.js";
 import { fetchWithCache, getCacheStats } from "./http-cache.js";
 import { fetchWithRetry as fetchWithRetryMiddleware } from "./http-retry.js";
@@ -86,11 +87,14 @@ export class PolarClient {
     const features = params.features === undefined ? [...(contract.defaultFeatures ?? [])] : params.features;
     validateFeatures(path, features, contract);
 
-    if (features.length && contract.featuresRequireSingleDay) {
-      return this.listWithDailyFeatures(path, params, contract, features);
-    }
-
-    return this.listPages(path, params, contract, features);
+    const result = features.length && contract.featuresRequireSingleDay
+      ? await this.listWithDailyFeatures(path, params, contract, features)
+      : await this.listPages(path, params, contract, features);
+    if (path !== "/activity/list") return result;
+    return {
+      ...result,
+      records: filterActivityExclusiveRange(normalizeActivityRecords(result.records), params.after, params.before)
+    };
   }
 
   private async listPages(path: string, params: ListParams, contract: CollectionEndpointContract, features: string[]): Promise<{ records: unknown[]; next_page?: number; pages_fetched: number }> {
@@ -120,7 +124,9 @@ export class PolarClient {
   private async listWithDailyFeatures(path: string, params: ListParams, contract: CollectionEndpointContract, features: string[]): Promise<{ records: unknown[]; next_page?: number; pages_fetched: number }> {
     const index = await this.listPages(path, { ...params, features: [] }, contract, []);
     const limit = Math.min(Math.max(params.limit ?? DEFAULT_LIMIT, 1), MAX_POLAR_LIMIT);
-    const dates = [...new Set(index.records.map(recordDate).filter((date): date is string => Boolean(date)))];
+    const dates = [...new Set(index.records.map(recordDate).filter((date): date is string => Boolean(date)))]
+      .filter((date) => path !== "/activity/list" || !params.after || date >= toPolarDate(params.after))
+      .filter((date) => path !== "/activity/list" || !params.before || date < toPolarDate(params.before));
     if (!dates.length) return index;
 
     const records: unknown[] = [];
@@ -132,7 +138,13 @@ export class PolarClient {
         features
       });
       hydratedRequests += 1;
-      records.push(...extractRecords(payload));
+      const pageRecords = extractRecords(payload);
+      // Activity v4 treats `to` as inclusive, so from=D&to=D+1 leaks D+1.
+      // Keep the requested civil day only — do not change the shared hydrate window.
+      const kept = path === "/activity/list"
+        ? pageRecords.filter((row) => recordDate(row) === date)
+        : pageRecords;
+      records.push(...kept);
       if (records.length >= limit) break;
     }
 
@@ -354,10 +366,41 @@ function shiftDate(value: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-function extractRecords(payload: unknown): unknown[] {
-  if (Array.isArray(payload)) return payload;
+function isEmptyObject(value: unknown): boolean {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.keys(value as object).length === 0);
+}
+
+function looksLikeResourceRecord(record: Record<string, unknown>): boolean {
+  return [
+    "id",
+    "identifier",
+    "trainingSessionId",
+    "date",
+    "day",
+    "startTime",
+    "sleepDate",
+    "sleepResultDate",
+    "created",
+    "deviceRef",
+    "samples",
+    "ansStatus",
+    "recoveryIndicator",
+    "sport",
+    "duration",
+    "steps"
+  ].some((key) => record[key] !== undefined);
+}
+
+function withoutEmptyObjects(items: unknown[]): unknown[] {
+  return items.filter((item) => !isEmptyObject(item));
+}
+
+/** Unwrap Polar list payloads. Empty envelopes (`{}`, `{ data: {} }`) become `[]`, not `[{}]`. */
+export function extractRecords(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return withoutEmptyObjects(payload);
   if (!payload || typeof payload !== "object") return [];
   const record = payload as Record<string, unknown>;
+  if (isEmptyObject(record)) return [];
   for (const key of [
     "data",
     "records",
@@ -389,7 +432,7 @@ function extractRecords(payload: unknown): unknown[] {
     "devices",
     "userDevices"
   ]) {
-    if (Array.isArray(record[key])) return record[key] as unknown[];
+    if (Array.isArray(record[key])) return withoutEmptyObjects(record[key] as unknown[]);
     if (record[key] && typeof record[key] === "object") {
       const nested = extractRecords(record[key]);
       if (nested.length) return nested;
@@ -398,7 +441,8 @@ function extractRecords(payload: unknown): unknown[] {
   const nestedArrays = Object.values(record)
     .map((value) => extractRecords(value))
     .find((items) => items.length > 0);
-  return nestedArrays ?? [record];
+  if (nestedArrays) return nestedArrays;
+  return looksLikeResourceRecord(record) ? [record] : [];
 }
 
 function recordDate(value: unknown): string | undefined {

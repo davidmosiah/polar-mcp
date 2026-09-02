@@ -29,6 +29,7 @@ const COLLECTION_ENDPOINT_CONTRACTS: Record<string, CollectionEndpointContract> 
   "/activity/list": {
     ...DATE_RANGE,
     supportedFeatures: ["samples", "activity-target", "physical-information"],
+    defaultFeatures: ["samples"],
     featuresRequireSingleDay: true
   },
   "/calendar/list": {

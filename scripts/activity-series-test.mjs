@@ -22,4 +22,42 @@ assert.ok(series.returned_points <= SERIES_HARD_MAX_POINTS);
 assert.ok(series.downsampled);
 assert.equal(series.data_quality.coverage_anchor, 'nominal_duration');
 assert.ok(Math.abs(series.stats.avg - 100) < 2);
-console.log(JSON.stringify({ ok: true, suite: 'activity-series', returned: series.returned_points, avg: series.stats.avg }));
+
+const v4 = buildHeartSeries({
+  records: [
+    {
+      date: '2026-08-23',
+      deviceRef: { deviceId: 'dev-1' },
+      samples: [
+        { heartRate: 81, offsetMillis: 1000, triggerType: 'TRIGGER_TIMED_247' },
+        { heartRate: 60, offsetMillis: 3000, triggerType: 'TRIGGER_TIMED_247' }
+      ]
+    },
+    {
+      date: '2026-08-23',
+      deviceRef: { deviceId: 'dev-2' },
+      samples: [
+        { heartRate: 44, offsetMillis: 2000, triggerType: 'TRIGGER_TIMED_247' }
+      ]
+    }
+  ]
+}, { activityId: '2026-08-23', startTime: '2026-08-23T00:00:00' });
+assert.equal(v4.source_points, 3);
+assert.deepEqual(v4.points.map((p) => p.t), [1, 2, 3]);
+assert.deepEqual(v4.points.map((p) => p.value), [81, 44, 60]);
+assert.equal(v4.stats.min, 44);
+assert.equal(v4.stats.max, 81);
+
+const empty = (() => {
+  try {
+    buildHeartSeries({ records: [{ date: '2026-08-23', samples: [] }] }, { activityId: '2026-08-23' });
+    return false;
+  } catch (error) {
+    assert.match(error.message, /No heart_rate samples/);
+    return true;
+  }
+})();
+assert.equal(empty, true);
+
+console.log(JSON.stringify({ ok: true, suite: 'activity-series', returned: series.returned_points, avg: series.stats.avg, v4: v4.source_points }));
+

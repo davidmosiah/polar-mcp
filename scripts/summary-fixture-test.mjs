@@ -100,6 +100,158 @@ assert.equal(v4Daily.scorecard.continuity, 4.2);
 assert.equal(v4Daily.scorecard.sleep_start, `${today}T00:00:00Z`);
 assert.equal(v4Daily.scorecard.sleep_end, `${today}T07:30:00Z`);
 
+const v4RechargeClient = {
+  async list(endpoint) {
+    if (endpoint === '/activity/list') return { records: [{ date: today, activitiesPerDevice: [] }], pages_fetched: 1 };
+    if (endpoint === '/sleeps') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/nightly-recharge-results') {
+      return {
+        records: [{
+          sleepResultDate: today,
+          ansStatus: -3.9621,
+          recoveryIndicator: 4,
+          meanNightlyRecoveryRmssd: 98,
+          meanNightlyRecoveryRri: 1202,
+          exerciseTip: 'Today is a good day for training!'
+        }],
+        pages_fetched: 1
+      };
+    }
+    if (endpoint === '/training-sessions/list') return { records: [{}], pages_fetched: 1 };
+    if (endpoint === '/continuous-samples') return { records: [{}], pages_fetched: 1 };
+    throw new Error(`unexpected endpoint ${endpoint}`);
+  }
+};
+
+const v4RechargeDaily = await buildDailySummary(v4RechargeClient, { days: 1, timezone: 'UTC' });
+assert.equal(v4RechargeDaily.scorecard.training_sessions, 0);
+assert.equal(v4RechargeDaily.scorecard.ans_status, -3.9621);
+assert.equal(v4RechargeDaily.scorecard.recovery_indicator, 4);
+assert.equal(v4RechargeDaily.scorecard.hrv_ms, 98);
+assert.equal(v4RechargeDaily.scorecard.nightly_recovery_rri, 1202);
+assert.equal(v4RechargeDaily.scorecard.exercise_tip, 'Today is a good day for training!');
+assert.equal(v4RechargeDaily.scorecard.ans_charge, undefined);
+assert.equal(v4RechargeDaily.scorecard.sleep_charge, undefined);
+assert.equal(v4RechargeDaily.scorecard.steps, undefined);
+
+const v4RechargeWeekly = await buildWeeklySummary(v4RechargeClient, { days: 7, compare_days: 0, timezone: 'UTC' });
+assert.equal(v4RechargeWeekly.scorecard.current.total_training_sessions, 0);
+assert.equal(v4RechargeWeekly.scorecard.current.days_with_training, 0);
+assert.equal(v4RechargeWeekly.scorecard.current.days_with_recharge, 7);
+assert.equal(v4RechargeWeekly.scorecard.current.total_steps, undefined);
+assert.equal(v4RechargeWeekly.scorecard.current.avg_steps, undefined);
+assert.equal(v4RechargeWeekly.scorecard.current.days_with_activity, 0);
+
+const v4SampleActivity = {
+  date: today,
+  activitiesPerDevice: [{
+    deviceReference: { deviceId: 'C4F60122' },
+    activitySamples: [{
+      activityInfos: [],
+      inactivityInfos: [],
+      stepSamples: { startTime: '00:00:00', interval: 60000, steps: [0, 2, 6, 10] }
+    }]
+  }]
+};
+const v4SampleDuplicate = {
+  date: today,
+  activitiesPerDevice: [{
+    deviceReference: { deviceId: 'C4F60122' },
+    activitySamples: [{
+      activityInfos: [],
+      inactivityInfos: [],
+      stepSamples: { startTime: '00:00:00', interval: 60000, steps: [0, 2, 6, 10] }
+    }]
+  }]
+};
+
+const v4StepsClient = {
+  async list(endpoint) {
+    if (endpoint === '/activity/list') return { records: [v4SampleActivity, v4SampleDuplicate], pages_fetched: 2 };
+    if (endpoint === '/sleeps') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/nightly-recharge-results') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/training-sessions/list') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/continuous-samples') return { records: [], pages_fetched: 1 };
+    throw new Error(`unexpected endpoint ${endpoint}`);
+  }
+};
+
+const v4StepsDaily = await buildDailySummary(v4StepsClient, { days: 1, timezone: 'UTC' });
+assert.equal(v4StepsDaily.scorecard.steps, 18);
+
+const tomorrow = new Date(`${today}T00:00:00Z`);
+tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+const tomorrowDate = tomorrow.toISOString().slice(0, 10);
+const leakedDayClient = {
+  async list(endpoint) {
+    if (endpoint === '/activity/list') {
+      return {
+        records: [
+          v4SampleActivity,
+          {
+            date: tomorrowDate,
+            activitiesPerDevice: [{
+              deviceReference: { deviceId: 'C4F60122' },
+              activitySamples: [{ stepSamples: { startTime: '00:00:00', interval: 60000, steps: [100, 100] } }]
+            }]
+          }
+        ],
+        pages_fetched: 1
+      };
+    }
+    if (endpoint === '/sleeps') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/nightly-recharge-results') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/training-sessions/list') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/continuous-samples') return { records: [], pages_fetched: 1 };
+    throw new Error(`unexpected endpoint ${endpoint}`);
+  }
+};
+const leakedDayDaily = await buildDailySummary(leakedDayClient, { days: 1, timezone: 'UTC' });
+assert.equal(leakedDayDaily.scorecard.steps, 18);
+
+const zeroStepsClient = {
+  async list(endpoint) {
+    if (endpoint === '/activity/list') {
+      return {
+        records: [{
+          date: today,
+          activitiesPerDevice: [{
+            deviceReference: { deviceId: 'C4F60122' },
+            activitySamples: [{ stepSamples: { startTime: '00:00:00', interval: 60000, steps: [0, 0, 0] } }]
+          }]
+        }],
+        pages_fetched: 1
+      };
+    }
+    if (endpoint === '/sleeps') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/nightly-recharge-results') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/training-sessions/list') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/continuous-samples') return { records: [], pages_fetched: 1 };
+    throw new Error(`unexpected endpoint ${endpoint}`);
+  }
+};
+const zeroStepsDaily = await buildDailySummary(zeroStepsClient, { days: 1, timezone: 'UTC' });
+assert.equal(zeroStepsDaily.scorecard.steps, 0);
+
+const mixedClient = {
+  async list(endpoint, params) {
+    if (endpoint === '/activity/list') {
+      if (params.after === today) return { records: [v4SampleActivity], pages_fetched: 1 };
+      return { records: [{ date: params.after, activitiesPerDevice: [] }], pages_fetched: 1 };
+    }
+    if (endpoint === '/sleeps') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/nightly-recharge-results') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/training-sessions/list') return { records: [], pages_fetched: 1 };
+    if (endpoint === '/continuous-samples') return { records: [], pages_fetched: 1 };
+    throw new Error(`unexpected endpoint ${endpoint}`);
+  }
+};
+const mixedWeekly = await buildWeeklySummary(mixedClient, { days: 7, compare_days: 0, timezone: 'UTC' });
+assert.equal(mixedWeekly.scorecard.current.days_with_activity, 1);
+assert.equal(mixedWeekly.scorecard.current.total_steps, 18);
+assert.equal(mixedWeekly.scorecard.current.avg_steps, 18);
+
+
 const originalStderrWrite = process.stderr.write.bind(process.stderr);
 let stderr = '';
 process.stderr.write = ((chunk) => {
