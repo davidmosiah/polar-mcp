@@ -31,6 +31,19 @@
 
 ---
 
+## HTTP (v2 stateless)
+
+Default is **stdio**. Optional Streamable HTTP — no session id, JSON responses, loopback only:
+
+```bash
+npx -y polar-mcp-unofficial --http
+# GET  http://127.0.0.1:3000/health
+# POST http://127.0.0.1:3000/mcp   (sessionless)
+```
+
+Env: `POLAR_MCP_HOST`, `POLAR_MCP_PORT`, `POLAR_MCP_TRANSPORT=http`.
+
+
 <!-- /delx-wellness header v2 -->
 
 **Local-first MCP server that connects AI agents to your Polar training, sleep, Nightly Recharge and continuous-sample data.**
@@ -288,3 +301,13 @@ MIT - see [LICENSE](LICENSE).
 ## Disclaimer
 
 This software is provided as-is. It is not a medical device, does not provide medical advice, and should not be used for diagnosis, treatment or training prescription. Always consult qualified professionals for medical or training concerns.
+
+## Skill or MCP
+
+Same package, two doors. MCP registers tools on stdio/HTTP. The [skill](skill/SKILL.md) can drive the **same** tools through the CLI when the client has no MCP:
+
+```bash
+npx -y polar-mcp-unofficial call polar_connection_status --json '{}'
+```
+
+Copy `skill/SKILL.md` into your agent skills dir.
