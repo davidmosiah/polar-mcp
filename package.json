@@ -31,7 +31,7 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "smoke": "node scripts/smoke-tools.mjs",
-"test": "npm run typecheck && npm run build && npm run smoke && npm run smoke:http && npm run test:date-range && npm run test:endpoint-contracts && npm run test:summary && npm run test:privacy-cache && npm run test:http-retry && npm run test:http-cache && npm run test:cli-ux && npm run test:agent-readiness && npm run test:hermes-agent && npm run test:demo-contract && npm run test:readme-contract && npm run test:activity-series && npm run test:activity-dedupe && npm run test:extract-records && npm run test:metadata && npm run test:skill-surface",
+    "test": "npm run typecheck && npm run build && npm run smoke && npm run smoke:http && npm run test:date-range && npm run test:endpoint-contracts && npm run test:summary && npm run test:privacy-cache && npm run test:http-retry && npm run test:http-cache && npm run test:cli-ux && npm run test:agent-readiness && npm run test:hermes-agent && npm run test:demo-contract && npm run test:readme-contract && npm run test:activity-series && npm run test:activity-dedupe && npm run test:extract-records && npm run test:metadata && npm run test:skill-surface",
     "test:summary": "node scripts/summary-fixture-test.mjs",
     "test:date-range": "node scripts/date-range-test.mjs",
     "test:endpoint-contracts": "node scripts/endpoint-contract-test.mjs",
@@ -76,6 +76,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
+    "ajv": "^8.20.0",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
   },

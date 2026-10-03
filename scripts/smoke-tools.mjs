@@ -1,4 +1,9 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import Ajv2020 from 'ajv/dist/2020.js';
+import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
@@ -21,13 +26,36 @@ const expectedResources = [
 ];
 const expectedPrompts = ['polar_daily_checkin', 'polar_training_load_investigation', 'polar_weekly_review'];
 
-const client = new Client({ name: 'polar-mcp-smoke-test', version: '0.0.0' });
-const transport = new StdioClientTransport({ command: 'node', args: ['dist/index.js'] });
-await client.connect(transport);
+// Isolate local configuration, tokens, and profiles from the user's home.
+const home = mkdtempSync(join(tmpdir(), 'polar-schema-smoke-'));
+const ajv = new Ajv2020({ strict: true, allowUnionTypes: true, validateSchema: true });
+const client = new Client({ name: 'polar-mcp-smoke-test', version: '0.0.0' }, {
+  jsonSchemaValidator: new AjvJsonSchemaValidator(ajv)
+});
+const transport = new StdioClientTransport({
+  command: process.execPath, args: ['dist/index.js'],
+  env: { PATH: process.env.PATH, HOME: home, USERPROFILE: home }
+});
 try {
+  await client.connect(transport);
   const tools = await client.listTools();
   const toolNames = tools.tools.map((tool) => tool.name).sort();
   assert.deepEqual(toolNames, expectedTools.sort());
+
+  // Compile every advertised contract with the dialect used by Claude Desktop.
+  for (const tool of tools.tools) {
+    for (const key of ['inputSchema', 'outputSchema']) {
+      if (tool[key]) assert.doesNotThrow(() => ajv.compile(tool[key]), `${tool.name}.${key}`);
+    }
+  }
+  const capabilities = tools.tools.find((tool) => tool.name === 'polar_capabilities');
+  assert.ok(capabilities.outputSchema, 'Structured output contracts must remain advertised');
+  const validateInput = ajv.compile(capabilities.inputSchema);
+  assert.equal(validateInput({ response_format: 'json' }), true);
+  assert.equal(validateInput({ response_format: 'invalid' }), false);
+  const invalidInput = await client.callTool({ name: 'polar_capabilities', arguments: { response_format: 'invalid' } });
+  assert.equal(invalidInput.isError, true, 'SDK argument validation must remain active');
+  assert.match(invalidInput.content[0].text, /[Ii]nput validation error/);
 
   const resources = await client.listResources();
   const resourceUris = resources.resources.map((resource) => resource.uri).sort();
@@ -46,6 +74,9 @@ try {
 
   const capabilitiesResult = await client.callTool({ name: 'polar_capabilities', arguments: { response_format: 'json' } });
   assert.equal(capabilitiesResult.structuredContent?.unofficial, true);
+  const validateOutput = ajv.compile(capabilities.outputSchema);
+  assert.equal(validateOutput(capabilitiesResult.structuredContent), true);
+  assert.equal(validateOutput({ ...capabilitiesResult.structuredContent, unofficial: 'yes' }), false);
   assert.ok(capabilitiesResult.structuredContent?.api_boundary?.does_not_include?.includes('write/upload/delete actions'));
   assert.ok(capabilitiesResult.structuredContent?.supported_data?.some((entry) => entry.tools?.includes('polar_list_nightly_recharge')));
   assert.ok(capabilitiesResult.structuredContent?.recommended_agent_flow?.some((step) => step.includes('polar_connection_status')));
@@ -68,4 +99,5 @@ try {
   console.log(JSON.stringify({ ok: true, tools: toolNames.length, resources: resourceUris.length, prompts: promptNames.length }, null, 2));
 } finally {
   await client.close();
+  rmSync(home, { recursive: true, force: true });
 }

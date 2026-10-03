@@ -9,6 +9,7 @@ import { runCliCommand } from "./cli/commands.js";
 import { registerPolarPrompts } from "./prompts/polar-prompts.js";
 import { registerPolarResources } from "./resources/polar-resources.js";
 import { registerPolarTools } from "./tools/polar-tools.js";
+import { installClientSafeToolSchemas } from "./services/client-safe-json-schema.js";
 
 function createServer(): McpServer {
   const server = new McpServer({
@@ -17,6 +18,7 @@ function createServer(): McpServer {
   });
 
   registerPolarTools(server);
+  installClientSafeToolSchemas(server);
   registerPolarResources(server);
   registerPolarPrompts(server);
   return server;
