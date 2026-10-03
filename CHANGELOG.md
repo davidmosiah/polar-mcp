@@ -1,3 +1,9 @@
+## 0.5.4 - 2026-10-03
+
+### Fixed
+
+- Advertise tool schemas as JSON Schema 2020-12 over stdio and HTTP so Claude Desktop can discover the tools. Preserve structured output contracts and SDK argument/result validation.
+
 ## 0.5.3 - 2026-08-29
 
 Skill layer ships in-package (`skill/SKILL.md`). Agents can use MCP tools **or** `call <tool> --json` on the same binary; mutation gates stay identical.
