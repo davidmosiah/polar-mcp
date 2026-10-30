@@ -1,7 +1,7 @@
 import { URL, URLSearchParams } from "node:url";
 import { DEFAULT_LIMIT, POLAR_API_BASE_URL, POLAR_AUTH_URL, POLAR_TOKEN_URL, MAX_POLAR_LIMIT, SERVER_VERSION } from "../constants.js";
 import type { PolarConfig, PolarTokenSet } from "../types.js";
-import { disabledCacheStatus, PolarCache, type CacheStatus } from "./cache.js";
+import { disabledCacheStatus, type CacheStatus } from "./cache.js";
 import { filterActivityExclusiveRange, normalizeActivityRecords } from "./activity.js";
 import { getCollectionEndpointContract, type CollectionEndpointContract } from "./endpoint-contracts.js";
 import { fetchWithCache, getCacheStats } from "./http-cache.js";
@@ -24,7 +24,6 @@ type QueryParams = Record<string, QueryValue>;
 
 export class PolarClient {
   private readonly tokenStore: TokenStore;
-  private cache?: PolarCache;
 
   constructor(private readonly config: PolarConfig) {
     this.tokenStore = new TokenStore(config.tokenPath);
@@ -78,8 +77,8 @@ export class PolarClient {
       default_ttl_seconds: 60,
       bypass_env_var: "POLAR_NO_CACHE"
     };
-    if (!this.config.cacheEnabled) return { ...disabledCacheStatus(this.config.cachePath), http_cache };
-    return { ...this.getCache().status(), http_cache };
+    // Authenticated responses are never cached, so the SQLite cache stays off even when configured.
+    return { ...disabledCacheStatus(this.config.cachePath), http_cache };
   }
 
   async list(path: string, params: ListParams = {}): Promise<{ records: unknown[]; next_page?: number; pages_fetched: number }> {
@@ -288,11 +287,6 @@ export class PolarClient {
       throw new Error(`Polar API HTTP ${response.status}: ${redactErrorMessage(details || response.statusText)}`);
     }
     return payload ?? {};
-  }
-
-  private getCache(): PolarCache {
-    this.cache ??= new PolarCache(this.config.cachePath);
-    return this.cache;
   }
 
   private async fetchWithRetry(url: string, init: RequestInit): Promise<Response> {

@@ -1,3 +1,9 @@
+## Unreleased
+
+### Security
+
+- Authenticated Polar responses are no longer stored in or served from the HTTP or SQLite cache, which was keyed only by method and URL and could return one account's data to another. `POLAR_CACHE` is still accepted but has no effect, and cache status, connection status and the privacy audit now report the cache as off. Delete `~/.polar-mcp/cache.sqlite` to remove entries written by earlier versions.
+
 ## 0.5.4 - 2026-10-03
 
 ### Fixed

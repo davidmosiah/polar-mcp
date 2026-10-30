@@ -383,7 +383,7 @@ export function registerPolarTools(server: McpServer): void {
 
   server.registerTool("polar_cache_status", {
     title: "Polar Cache Status",
-    description: "Show optional local SQLite cache status. Enable with POLAR_CACHE=sqlite or POLAR_CACHE=true.",
+    description: "Show local cache status. Authenticated Polar responses are never cached, so POLAR_CACHE has no effect and the SQLite cache stays off.",
     inputSchema: ResponseOnlyInputSchema.shape,
     outputSchema: CacheStatusOutputSchema.shape,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
