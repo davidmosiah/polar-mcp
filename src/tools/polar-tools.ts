@@ -8,6 +8,8 @@ import {
   CacheStatusOutputSchema,
   CapabilitiesOutputSchema,
   CollectionInputSchema,
+  DenseCollectionInputSchema,
+  DenseCollectionOutputSchema,
   CollectionOutputSchema,
   ConnectionStatusInputSchema,
   ConnectionStatusOutputSchema,
@@ -32,6 +34,7 @@ import {
 import { buildAgentManifest, formatAgentManifestMarkdown } from "../services/agent-manifest.js";
 import { buildPrivacyAudit } from "../services/audit.js";
 import { buildCapabilities } from "../services/capabilities.js";
+import { buildDenseCollectionOutput } from "../services/dense-collection.js";
 import { buildCollectionOutput } from "../services/collection.js";
 import { buildDemoPayload } from "../services/demo.js";
 import { buildDataInventory, formatInventoryMarkdown } from "../services/inventory.js";
@@ -92,6 +95,25 @@ function registerCollectionTool(server: McpServer, name: string, title: string, 
       }
     }
   );
+}
+
+function registerDenseCollectionTool(server: McpServer, name: string, title: string, endpoint: string, description: string): void {
+  server.registerTool(name, {
+    title,
+    description: `${description} Complete records are bounded by max_points; inspect truncated and omitted_records. No partial sample slicing or medical inference.`,
+    inputSchema: DenseCollectionInputSchema.shape,
+    outputSchema: DenseCollectionOutputSchema.shape,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, async (params) => {
+    try {
+      const config = getConfig();
+      const privacyMode = resolvePrivacyMode(config, params.privacy_mode, { explicit_user_intent: params.explicit_user_intent });
+      const result = await new PolarClient(config).list(endpoint, params);
+      const output = buildDenseCollectionOutput(endpoint, privacyMode, result, params.max_points);
+      const markdown = `${formatCollection(title, output.records, output)}\n\nBudget: ${output.budget_used}/${output.max_points}; omitted records: ${output.omitted_records}; truncated: ${output.truncated}. ${output.notes.join(" ")}`;
+      return makeResponse(output, params.response_format, markdown);
+    } catch (error) { return makeError(error); }
+  });
 }
 
 function registerReadTool(server: McpServer, name: string, title: string, endpoint: string, description: string): void {
@@ -279,7 +301,7 @@ export function registerPolarTools(server: McpServer): void {
 
   registerCollectionTool(server, "polar_list_activity", "Polar Daily Activity", "/activity/list", "List Polar daily activity records. Requires activity:read.");
   registerCollectionTool(server, "polar_list_calendar", "Polar Calendar", "/calendar/list", "List Polar calendar entries in a date range. Requires calendar:read.");
-  registerCollectionTool(server, "polar_list_continuous_samples", "Polar Continuous Samples", "/continuous-samples", "List continuous sample records for a date range. Requires continuous_samples:read. Prefer polar_heart_series for agent-safe bounded HR series. Not medical advice.");
+  registerDenseCollectionTool(server, "polar_list_continuous_samples", "Polar Continuous Samples", "/continuous-samples", "List continuous sample records for a date range. Requires continuous_samples:read. Prefer polar_heart_series for agent-safe bounded HR series. Not medical advice.");
 
   server.registerTool("polar_heart_series", {
     title: "Polar Heart Series",
@@ -328,7 +350,7 @@ export function registerPolarTools(server: McpServer): void {
     }
   });
   registerCollectionTool(server, "polar_list_nightly_recharge", "Polar Nightly Recharge", "/nightly-recharge-results", "List Nightly Recharge results in a date range. Requires nightly_recharge:read. Not medical advice.");
-  registerCollectionTool(server, "polar_list_ppi_samples", "Polar PPI Samples", "/ppi-samples", "List pulse-to-pulse interval samples in a date range. Requires ppi_data:read.");
+  registerDenseCollectionTool(server, "polar_list_ppi_samples", "Polar PPI Samples", "/ppi-samples", "List pulse-to-pulse interval samples in a date range. Requires ppi_data:read.");
   registerCollectionTool(server, "polar_list_skin_contacts", "Polar Skin Contacts", "/skin-contacts", "List skin contact periods in a date range. Requires skin_contact:read.");
   registerCollectionTool(server, "polar_list_sleeps", "Polar Sleeps", "/sleeps", "List Polar sleep records in a date range. Requires sleep:read. Not medical advice.");
   registerCollectionTool(server, "polar_list_sleep_wake_vectors", "Polar Sleep Wake Vectors", "/sleep-wake-vectors", "List sleep/wake vector records in a date range. Requires sleep:read. Not medical advice.");

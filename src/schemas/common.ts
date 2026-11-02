@@ -8,6 +8,8 @@ import {
   SERIES_METRICS
 } from "../services/series.js";
 
+import { DENSE_COLLECTION_CONTRACT, DENSE_COLLECTION_DEFAULT_POINTS, DENSE_COLLECTION_MAX_POINTS } from "../services/dense-collection.js";
+
 export const ResponseFormatSchema = z.enum(["markdown", "json"]).default("markdown");
 export const AgentClientSchema = z.enum(AGENT_CLIENTS).default("generic");
 export const PrivacyModeValueSchema = z.enum(["summary", "structured", "raw"]);
@@ -42,6 +44,11 @@ export const CollectionInputSchema = z.object({
   explicit_user_intent: ExplicitPrivacyIntentSchema,
   response_format: ResponseFormatSchema
 }).strict();
+
+export const DenseCollectionInputSchema = CollectionInputSchema.extend({
+  max_points: z.number().int().min(1).max(DENSE_COLLECTION_MAX_POINTS).default(DENSE_COLLECTION_DEFAULT_POINTS)
+    .describe("Conservative total JSON-value budget across complete records (containers included). Oversized records are omitted, not downsampled; see truncated/omitted_records. Does not cap upstream fetch memory.")
+});
 
 export const IdInputSchema = z.object({
   id: z.union([z.string().min(1), z.number().int().positive()]).describe("Polar resource id."),
@@ -140,6 +147,15 @@ export const CollectionOutputSchema = z.object({
   has_more: z.boolean(),
   pages_fetched: z.number().int().nonnegative()
 }).strict();
+
+export const DenseCollectionOutputSchema = CollectionOutputSchema.extend({
+  contract_version: z.literal(DENSE_COLLECTION_CONTRACT),
+  max_points: z.number().int().min(1).max(DENSE_COLLECTION_MAX_POINTS),
+  budget_used: z.number().int().nonnegative().max(DENSE_COLLECTION_MAX_POINTS),
+  omitted_records: z.number().int().nonnegative(),
+  truncated: z.boolean(),
+  notes: z.array(z.string())
+});
 
 export const CacheStatusOutputSchema = z.object({
   enabled: z.boolean(),

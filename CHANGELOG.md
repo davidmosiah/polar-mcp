@@ -98,6 +98,11 @@ Skill layer ships in-package (`skill/SKILL.md`). Agents can use MCP tools **or**
 
 # Changelog
 
+## Unreleased — dense collection budget
+
+- Bound continuous/PPI sample collections with a conservative whole-record budget and explicit omission metadata; preserve sample channel alignment and existing privacy/cache controls.
+- Add fixture regressions for nested arrays, mapping samples, all privacy modes, schemas, and both registered tool handlers.
+
 ## 0.5.2
 
 - Security: raise `hono` override to **4.13.1** (clears moderate MCP SDK transitive advisories); `@hono/node-server@2.1.0`.
