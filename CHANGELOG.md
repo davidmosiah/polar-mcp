@@ -1,13 +1,11 @@
-## Unreleased security hardening
+## 0.6.0 - 2026-11-02
 
-- Update the MCP SDK, Zod and pinned transitive dependencies to patched versions; regenerate the npm lockfile without install scripts.
-- Limit tool arguments to 10,000 elements across both transports and reject compressed HTTP bodies; retain the 1 MiB JSON limit. Add synthetic regression coverage.
+### Security and compatibility
 
-## Unreleased
-
-### Security
-
-- Authenticated Polar responses are no longer stored in or served from the HTTP or SQLite cache, which was keyed only by method and URL and could return one account's data to another. `POLAR_CACHE` is still accepted but has no effect, and cache status, connection status and the privacy audit now report the cache as off. Delete `~/.polar-mcp/cache.sqlite` to remove entries written by earlier versions.
+- Release the main-branch hardening for authenticated-response cache isolation, local-only HTTP, profile validation, 256 KiB profile storage limits, cooperative writer locking and symlink rejection.
+- Bound tool input collections to 10,000 elements and reject compressed HTTP JSON bodies; preserve endpoint-specific limits.
+- Align package, lockfile, server manifest and runtime versions. Extend the existing CI matrix to Node.js 20/22/24 without changing workflow permissions.
+- These security restrictions can reject previously accepted configuration or input, so this is a pre-1.0 minor release. See [migration notes](docs/migration-0.6.0.md).
 
 ## 0.5.4 - 2026-10-03
 

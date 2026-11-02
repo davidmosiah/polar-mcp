@@ -1,6 +1,6 @@
 {
   "name": "polar-mcp-unofficial",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "description": "Unofficial local-first Polar AccessLink Dynamic API v4 MCP server for AI health, sleep and training agents.",
   "type": "module",
   "bin": {
@@ -31,7 +31,7 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "smoke": "node scripts/smoke-tools.mjs",
-    "test": "npm run typecheck && npm run build && npm run smoke && npm run smoke:http && npm run test:date-range && npm run test:endpoint-contracts && npm run test:summary && npm run test:privacy-cache && npm run test:http-retry && npm run test:http-cache && npm run test:cli-ux && npm run test:agent-readiness && npm run test:hermes-agent && npm run test:demo-contract && npm run test:readme-contract && npm run test:activity-series && npm run test:activity-dedupe && npm run test:extract-records && npm run test:metadata && npm run test:skill-surface && npm run test:input-limits && npm run test:dense-collection && npm run test:scorecard-gate && npm run test:profile-boundaries && npm run test:profile-storage && npm run test:http-local-only",
+    "test": "npm run typecheck && npm run build && npm run smoke && npm run smoke:http && npm run test:date-range && npm run test:endpoint-contracts && npm run test:summary && npm run test:privacy-cache && npm run test:http-retry && npm run test:http-cache && npm run test:cli-ux && npm run test:agent-readiness && npm run test:hermes-agent && npm run test:demo-contract && npm run test:readme-contract && npm run test:activity-series && npm run test:activity-dedupe && npm run test:extract-records && npm run test:metadata && npm run test:skill-surface && npm run test:input-limits && npm run test:dense-collection && npm run test:scorecard-gate && npm run test:profile-boundaries && npm run test:profile-storage && npm run test:http-local-only && npm run test:release-metadata",
     "test:summary": "node scripts/summary-fixture-test.mjs",
     "test:date-range": "node scripts/date-range-test.mjs",
     "test:endpoint-contracts": "node scripts/endpoint-contract-test.mjs",
@@ -55,7 +55,8 @@
     "test:scorecard-gate": "node scripts/scorecard-gate-test.mjs",
     "test:profile-boundaries": "node scripts/test-profile-validation.mjs && node scripts/test-profile-io.mjs && node scripts/test-profile-boundaries.mjs",
     "test:profile-storage": "node scripts/test-profile-storage.mjs",
-    "test:http-local-only": "node scripts/test-http-local-only.mjs"
+    "test:http-local-only": "node scripts/test-http-local-only.mjs",
+    "test:release-metadata": "node scripts/release-metadata-test.mjs"
   },
   "keywords": [
     "mcp",
