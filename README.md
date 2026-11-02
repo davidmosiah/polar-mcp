@@ -215,7 +215,7 @@ POLAR_REDIRECT_URI=http://127.0.0.1:3000/callback
 # Optional
 POLAR_SCOPES="activity:read calendar:read continuous_samples:read ..."
 POLAR_PRIVACY_MODE=structured        # summary | structured | raw
-POLAR_CACHE=sqlite                   # optional read-through cache
+POLAR_CACHE=sqlite                   # no effect: authenticated responses are never cached
 POLAR_TOKEN_PATH=~/.polar-mcp/tokens.json
 POLAR_CACHE_PATH=~/.polar-mcp/cache.sqlite
 ```
