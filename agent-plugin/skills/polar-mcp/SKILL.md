@@ -28,5 +28,5 @@ npx -y polar-mcp-unofficial@0.6.0 doctor
 
 - Never ask the user to paste client secrets, passwords, tokens or MFA codes into the chat; setup happens in their terminal.
 - Tools that change local state: polar_profile_update (local profile only), polar_exchange_code (stores OAuth tokens locally). Use them only when the user asks.
-- Destructive: polar_revoke_access (revokes the Polar grant and deletes local tokens). Confirm with the user first.
+- Destructive: polar_revoke_access (deletes local tokens only; the user must revoke the remote grant in Polar AccessLink/Flow if needed). Confirm with the user first.
 - Not medical advice: the data supports personal reflection and planning, not diagnosis or treatment. Point the user to a clinician for symptoms, medication or anything urgent.
