@@ -1,0 +1,24 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "polar-mcp",
+  "version": "0.5.4",
+  "description": "Read the user's Polar training sessions, nightly recharge, sleep and activity through the local polar MCP server.",
+  "author": {
+    "name": "David Mosiah",
+    "url": "https://github.com/davidmosiah"
+  },
+  "homepage": "https://github.com/davidmosiah/polar-mcp",
+  "repository": "https://github.com/davidmosiah/polar-mcp",
+  "license": "MIT",
+  "keywords": [
+    "ai-agents",
+    "fitness",
+    "health",
+    "heart-rate",
+    "hermes",
+    "mcp",
+    "model-context-protocol",
+    "polar",
+    "sleep"
+  ]
+}
