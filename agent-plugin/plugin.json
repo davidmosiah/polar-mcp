@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "polar-mcp",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "description": "Read the user's Polar training sessions, nightly recharge, sleep and activity through the local polar MCP server.",
   "author": {
     "name": "David Mosiah",
