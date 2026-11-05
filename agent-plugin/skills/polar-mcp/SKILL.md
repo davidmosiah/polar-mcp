@@ -6,7 +6,7 @@ description: >-
 
 # Polar
 
-MCP server `polar` from the `polar-mcp-unofficial@0.5.4` npm package, run locally through `npx`. It reads training sessions, nightly recharge, sleep and daily activity. Data source: the official Polar AccessLink Dynamic API v4.
+MCP server `polar` from the `polar-mcp-unofficial@0.6.0` npm package, run locally through `npx`. It reads training sessions, nightly recharge, sleep and daily activity. Data source: the official Polar AccessLink Dynamic API v4.
 
 ## Workflow
 
@@ -17,9 +17,9 @@ MCP server `polar` from the `polar-mcp-unofficial@0.5.4` npm package, run locall
 ## Setup (the user runs this in a terminal, not in chat)
 
 ```bash
-npx -y polar-mcp-unofficial@0.5.4 setup --client generic
-npx -y polar-mcp-unofficial@0.5.4 auth
-npx -y polar-mcp-unofficial@0.5.4 doctor
+npx -y polar-mcp-unofficial@0.6.0 setup --client generic
+npx -y polar-mcp-unofficial@0.6.0 auth
+npx -y polar-mcp-unofficial@0.6.0 doctor
 ```
 
 `setup` asks for the Polar developer app client ID and secret and saves them locally (`--client generic` because this plugin already registers the server with Hermes); `auth` opens the Polar consent page in the browser and stores the OAuth tokens under `~/.polar-mcp/` with 0600 permissions; `doctor` confirms readiness.

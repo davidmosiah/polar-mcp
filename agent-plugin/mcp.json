@@ -6,7 +6,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "polar-mcp-unofficial@0.5.4"
+        "polar-mcp-unofficial@0.6.0"
       ],
       "cwd": "${PLUGIN_DATA}"
     }
