@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "polar": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "polar-mcp-unofficial@0.5.4"
+      ],
+      "cwd": "${PLUGIN_DATA}"
+    }
+  }
+}
